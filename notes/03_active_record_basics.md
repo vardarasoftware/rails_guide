@@ -180,3 +180,49 @@ The `Book::Order` model will still use `book_orders` as the table name without n
 ```ruby
 Book::Order.table_name # => "book_orders"
 ```
+
+# 4. Overriding Naming Conventions in Active Record
+
+## 4.1 Customizing Table Names
+If you need to follow a different naming convention or use a legacy database, you can override Rails' default conventions.
+
+- Use `self.table_name=` to specify a custom table name.
+
+```ruby
+class Book < ApplicationRecord
+  self.table_name = "my_books"
+end
+```
+
+- If you override the table name, manually define the class name hosting the fixtures using `set_fixture_class` in your test definition:
+
+```ruby
+# test/models/book_test.rb
+class BookTest < ActiveSupport::TestCase
+  set_fixture_class my_books: Book
+  fixtures :my_books
+  # ...
+end
+```
+
+## 4.2 Customizing Primary Keys
+- Override the primary key column using `self.primary_key=`:
+
+```ruby
+class Book < ApplicationRecord
+  self.primary_key = "book_id"
+end
+```
+
+### Important Considerations:
+- Avoid using non-primary key columns named `id`. If `id` is not a single-column primary key, accessing its value becomes complicated.
+- Use `id_value` alias attribute to access a non-PK `id` column.
+- Rails will throw an error during migrations if you try to create a non-primary key column named `id`. To define a custom primary key, pass `{ id: false }` to `create_table`:
+
+```ruby
+create_table :my_books, id: false do |t|
+  t.primary_key :book_id
+  t.string :title
+  t.timestamps
+end
+```
