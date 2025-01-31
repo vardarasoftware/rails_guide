@@ -91,3 +91,92 @@ Active Record follows specific database schema conventions:
 ### **Avoid Reserved Column Names**
 - `type` is reserved for **Single Table Inheritance (STI)**.
 - If STI (Single Table Inheritance) is not used, choose a more descriptive column name.
+
+
+# 3. Creating Active Record Models
+
+When generating a Rails application, an abstract `ApplicationRecord` class is created in `app/models/application_record.rb`. This class inherits from `ActiveRecord::Base` and turns a regular Ruby class into an Active Record model.
+
+### Example:
+```ruby
+class Book < ApplicationRecord
+end
+```
+This creates a `Book` model mapped to a `books` table in the database.
+
+## 3.2 Creating Database Tables
+A `books` table with columns `id`, `title`, and `author` can be created using SQL:
+```sql
+CREATE TABLE books (
+  id int(11) NOT NULL auto_increment,
+  title varchar(255),
+  author varchar(255),
+  PRIMARY KEY  (id)
+);
+```
+However, in Rails, tables are typically created using **Active Record Migrations**:
+```sh
+$ bin/rails generate migration CreateBooks title:string author:string
+```
+Generated migration:
+```ruby
+class CreateBooks < ActiveRecord::Migration[8.0]
+  def change
+    create_table :books do |t|
+      t.string :title
+      t.string :author
+
+      t.timestamps
+    end
+  end
+end
+```
+The migration creates `id`, `title`, `author`, `created_at`, and `updated_at` columns.
+
+## 3.3 Interacting with Active Record Models
+Create and interact with an instance of `Book`:
+```ruby
+book = Book.new
+book.title = "The Hobbit"
+puts book.title # => "The Hobbit"
+```
+You can generate both the **model class** and **matching migration** together:
+```sh
+$ bin/rails generate model Book title:string author:string
+```
+This creates:
+- `app/models/book.rb`
+- `db/migrate/20240220143807_create_books.rb`
+- Test files
+
+## 3.4 Creating Namespaced Models
+To organize models under a folder and namespace:
+```sh
+$ bin/rails generate model Book::Order
+```
+Generated structure:
+```
+app/models/book/order.rb  → class Book::Order < ApplicationRecord
+app/models/book.rb       → module Book
+```
+If `Book` already exists, Rails will prompt for conflict resolution.
+
+To ensure namespaced tables, set a prefix in `app/models/book.rb`:
+```ruby
+module Book
+  def self.table_name_prefix
+    "book_"
+  end
+end
+```
+This ensures `Book::Order` maps to `book_orders` rather than `orders`.
+
+If `Book` is already a model:
+```ruby
+class Book < ApplicationRecord
+end
+```
+The `Book::Order` model will still use `book_orders` as the table name without needing a prefix:
+```ruby
+Book::Order.table_name # => "book_orders"
+```
