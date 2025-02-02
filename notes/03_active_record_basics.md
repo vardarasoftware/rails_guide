@@ -135,7 +135,7 @@ The migration creates `id`, `title`, `author`, `created_at`, and `updated_at` co
 
 ## 3.3 Interacting with Active Record Models
 Create and interact with an instance of `Book`:
-```ruby
+```ruby console
 book = Book.new
 book.title = "The Hobbit"
 puts book.title # => "The Hobbit"
@@ -225,4 +225,105 @@ create_table :my_books, id: false do |t|
   t.string :title
   t.timestamps
 end
+```
+# 5. CRUD: Reading and Writing Data in Active Record
+
+## 5.1. Introduction to CRUD
+- **CRUD**: Stands for **Create, Read, Update, Delete**.
+- **Active Record** provides high-level methods to perform CRUD operations.
+- **SQL statements** are automatically generated and executed against the database.
+
+---
+
+## 5.2. Create
+### Creating Records
+- **`Book.create(attributes)`** → Creates and saves an object to the database.
+- **`Book.new`** → Instantiates an object without saving it.
+- **`Block Syntax`** → Use a block to initialize the object, and create will save it
+
+```ruby console
+# Create and save a book record
+book = Book.create(title: "The Lord of the Rings", author: "J.R.R. Tolkien")
+
+# Create an object without saving
+book = Book.new
+book.title = "The Hobbit"
+book.author = "J.R.R. Tolkien"
+book.save  # Now saved in DB
+
+# Block Syntax
+book = Book.new do |b|
+  b.title = "Metaprogramming Ruby 2"
+  b.author = "Paolo Perrotta"
+end
+book.save
+
+```
+## 5.3 Read
+### Fetching Records
+- **Retrieve all records**: ```Book.all```
+- **Retrieve first or last record**: ```Book.first```, ```Book.last```
+- **Retrieve any record**: ```Book.take```
+- **Find by ID**: ```Book.find(id)```
+
+```ruby console
+# Fetching books
+books = Book.all
+first_book = Book.first
+last_book = Book.last
+book = Book.take
+book_by_id = Book.find(42)
+```
+### Fetching with Conditions
+- **Find first match**: ```Book.find_by(attribute: value)```
+- **Find multiple records**: ```Book.where(attribute: value)```
+- **Sorting results**: ```.order(column: :asc or :desc)```
+
+```ruby console
+# Find first book with the given title
+book = Book.find_by(title: "Metaprogramming Ruby 2")
+
+# Find all books by a specific author and sort them
+Book.where(author: "Douglas Adams").order(created_at: :desc)
+```
+
+## 5.4 Update
+### Updating a Record
+
+- **Update using attribute assignment +** ``` .save```
+
+```ruby console
+book = Book.find_by(title: "The Lord of the Rings")
+book.title = "The Lord of the Rings: The Fellowship of the Ring"
+book.save
+```
+
+- **Update using** ```.update(attributes)```
+
+```ruby console
+book.update(title: "The Lord of the Rings: The Fellowship of the Ring")
+```
+
+- **Updating Multiple Records**
+
+```ruby console
+Book.update_all(status: "already own")
+```
+
+## 5.4 Delete
+### Deleting a Record
+```ruby console
+book = Book.find_by(title: "The Lord of the Rings")
+book.destroy
+```
+
+- Deletes the record from the database.
+### Deleting Multiple Records
+
+```ruby console
+# Delete all books by an author
+Book.destroy_by(author: "Douglas Adams")
+
+# Delete all books
+Book.destroy_all
 ```
