@@ -138,3 +138,17 @@
         => #<User:0x000000013e8b5008 id: nil, name: nil>
         irb> user.errors.full_messages
         => ["Name can't be blank"]
+
+# 7_Callbacks ------
+    Callbacks allow us to execute code automatically in a model's lifecycle.
+    we can define custom action that can run when
+    "created", "deleted", "updated" or "modified" 
+
+    --> Why use Callbacks?
+        To "log activities", "send notifications", "modify data before saving" and "clean up related data" 
+
+    --> Benefits of Callbacks
+        Keeps code organized 
+        Reduces duplication
+        Ensures consistency
+
