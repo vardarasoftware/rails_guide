@@ -327,3 +327,44 @@ Book.destroy_by(author: "Douglas Adams")
 # Delete all books
 Book.destroy_all
 ```
+
+
+## 6. Validations
+
+Active Record allows you to validate the state of a model before it gets written into the database. Several methods ensure data integrity, such as:
+
+- Ensuring an attribute is **not empty**
+- Checking for **uniqueness**
+- Confirming an attribute **is not already in the database**
+- Enforcing a **specific format**
+
+### Methods for Validation
+- `save`, `create`, and `update` validate the model before persisting it to the database.
+- If validation fails:
+  - `save` and `update` return `false`
+  - `create` returns the object (which can be inspected for errors)
+  - The **bang versions** (`save!`, `create!`, `update!`) raise an `ActiveRecord::RecordInvalid` exception.
+
+### Example:
+```ruby
+class User < ApplicationRecord
+  validates :name, presence: true
+end
+```
+```irb
+irb> user = User.new
+irb> user.save
+=> false
+irb> user.save!
+ActiveRecord::RecordInvalid: Validation failed: Name can't be blank
+```
+
+#### Checking Errors:
+```irb
+irb> user = User.create
+=> #<User:0x000000013e8b5008 id: nil, name: nil>
+irb> user.errors.full_messages
+=> ["Name can't be blank"]
+```
+      
+
