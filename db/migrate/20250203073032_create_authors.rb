@@ -9,7 +9,6 @@ class CreateAuthors < ActiveRecord::Migration[8.0]
       t.string :email
       t.string :website
       t.integer :total_books
-      
       t.timestamps
     end
   end
