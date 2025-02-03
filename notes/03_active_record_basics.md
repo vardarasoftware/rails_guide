@@ -49,3 +49,68 @@ this generate command will create 'app/models/book' with 'Book::Order' class nam
 
 # Overriding the Naming Conventions -----------
 
+Rails follows a convention-over-configuration approach, that means it expects things to be named in a certain way. 
+If we're working with a legacy database that doesn't follow Rails' naming conventions, we can override defaults names like Table name, Primary Key, Fixtures in test.
+
+# CRUD: Reading and Writing Data -------
+
+CRUD stands for "Create, Read, Update and Delete"
+These are the basic operations used to managed the data in database.
+
+Create --> add new data in database
+Read --> retrive the data from the database
+Update --> modifies the existing data 
+Delete --> remove data from the database
+
+# Creat ---
+In rails we can create object in different ways using Active Record.
+The two main methods are "new" and "create".
+
+In new --- we can create new object in memory but not save in database right away
+            we can set its details first then save it later using the "save" method
+
+In create --- we can create new object and saves it to database immediately.
+
+# Read --
+Active record provides an easy way to retrieve data from the database using simple methods instead of writing SQL quaries manually.
+
+Retrive All Records --> we can retrive all record from a table "books = Book.all" like this
+Retrieve a Single Record --> we an get the first or last record based on their order in the        database 
+        "first_book = Book.first
+        last_book = Book.last
+        book = Book.take"
+        like this
+
+Find Specific Records --> we can search for a record based on a specific attribute 
+                        "book = Book.find_by(title: "Metaprogramming Ruby 2")
+                        book = Book.find(42)"
+                        like this
+
+# Update ---
+We can modify its details and save the changes back to the database.
+
+Updating a Single Record --> First, we find the record we want to update
+                             Then, we change its details
+                             Finally, we save the changes, and the record in the database is updated.
+                             "book = Book.find_by(title: "The Lord of the Rings")
+                              book.title = "The Lord of the Rings: The Fellowship of the Ring"
+                              book.save"
+                              
+Updating Multiple Records at Once --> If we need to update many records at the same time, 
+                                      we can do it in bulk.
+                                      " Book.update_all(status: "already own")"
+
+# Delete ---
+Once you retrieve a record from the database, you can delete it to remove it permanently.
+
+Deleting a Single Record --> First, we find the record you want to delete
+                             Then, we call the delete action, which removes it from the database.
+                             " book = Book.find_by(title: "The Lord of the Rings")
+                               book.destroy "
+
+Deleting Multiple Records --> If we want to remove all records from the table
+                              we can delete everything at once.
+                              " Book.destroy_by(author: "Douglas Adams")
+                                Book.destroy_all "
+
+

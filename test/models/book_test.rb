@@ -3,4 +3,3 @@ class BookTest < ActiveSupport::TestCase
     fixtures :my_books
     # ...
   end
-  
