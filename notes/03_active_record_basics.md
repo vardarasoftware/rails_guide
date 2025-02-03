@@ -152,3 +152,37 @@
         Reduces duplication
         Ensures consistency
 
+# 8_Migration ----
+    Migration helps us to manage and track changes to the database schema over the time.
+    It allow us to modify the database structure without writing SQL.
+
+    Example---
+    In the example we are creating a new table called "publications" with the following columns:
+    -> title
+    -> discription
+    -> Publication_type
+    -> publisher
+    -> single_issue
+    -> timestamps
+
+    --> class CreatePublications < ActiveRecord::Migration[8.0]
+        def change
+            create_table :publications do |t|
+            t.string :title
+            t.text :description
+            t.references :publication_type
+            t.references :publisher, polymorphic: true
+            t.boolean :single_issue
+
+            t.timestamps
+            end
+        end
+        end
+
+
+
+    After writing migration, we run it using the command
+    --> "" bin/rails db:migrate ""
+
+    If we want to undo the changes made by migration, we can roll it back using the command
+    --> "" bin/rails db:rollback ""
