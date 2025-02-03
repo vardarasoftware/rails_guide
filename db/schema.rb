@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_03_043840) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_03_044323) do
   create_table "book_orders", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -23,10 +23,25 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_03_043840) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "publications", force: :cascade do |t|
+    t.string "title"
+    t.text "description"
+    t.integer "publication_type_id", null: false
+    t.string "publisher_type", null: false
+    t.integer "publisher_id", null: false
+    t.boolean "single_issue"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["publication_type_id"], name: "index_publications_on_publication_type_id"
+    t.index ["publisher_type", "publisher_id"], name: "index_publications_on_publisher"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "name"
     t.string "email"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
+
+  add_foreign_key "publications", "publication_types"
 end
