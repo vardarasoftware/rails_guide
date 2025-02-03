@@ -366,5 +366,27 @@ irb> user = User.create
 irb> user.errors.full_messages
 => ["Name can't be blank"]
 ```
-      
+
+## 7. Callbacks
+
+Active Record callbacks allow executing code during specific events in the model lifecycle, such as:
+- `create`
+- `update`
+- `destroy`
+
+### Example:
+```ruby
+class User < ApplicationRecord
+  after_create :log_new_user
+
+  private
+  def log_new_user
+    puts "A new user was registered"
+  end
+end
+```
+```irb
+irb> @user = User.create
+A new user was registered
+```
 
