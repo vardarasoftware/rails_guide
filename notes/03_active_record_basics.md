@@ -186,3 +186,18 @@
 
     If we want to undo the changes made by migration, we can roll it back using the command
     --> "" bin/rails db:rollback ""
+
+
+# 9_Association ----
+    In rails assocaition define the relationships between models.
+
+    The relationships we can define are:
+
+    --> One-to-One:
+        one record in a model is associate with exactly one record in another model
+    
+    --> One-to-Many:
+        one record in a model can be associate with multipal records in another model
+
+    --> Many-to-Many:
+        multipal record in a model can be associate with multipal records in another model
