@@ -46,3 +46,6 @@ Namespacing allows us to group, related models into their own Subfolder and give
 # --> "bin/rails generate model Book::Order"
 this generate command will create 'app/models/book' with 'Book::Order' class name respectively 
 
+
+# Overriding the Naming Conventions -----------
+
