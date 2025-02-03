@@ -415,3 +415,18 @@ end
 - Rollback migration: `bin/rails db:rollback`
 
 
+## 9. Associations
+
+Active Record associations define relationships between models. Types of relationships:
+- **One-to-One**
+- **One-to-Many**
+- **Many-to-Many**
+
+### Example:
+```ruby
+class Author < ApplicationRecord
+  has_many :books
+end
+```
+The `Author` model now has methods to manage associated `books`.
+
