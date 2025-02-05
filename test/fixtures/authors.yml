@@ -1,0 +1,21 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  first_name: MyString
+  last_name: MyString
+  bio: MyText
+  date_of_birth: 2025-02-03
+  nationality: MyString
+  email: MyString
+  website: MyString
+  total_books: 1
+
+two:
+  first_name: MyString
+  last_name: MyString
+  bio: MyText
+  date_of_birth: 2025-02-03
+  nationality: MyString
+  email: MyString
+  website: MyString
+  total_books: 1
