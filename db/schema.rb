@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_04_073742) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_05_092745) do
   create_table "authors", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -31,6 +31,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_04_073742) do
     t.index ["author_id"], name: "index_books_on_author_id"
   end
 
+  create_table "categories_products", id: false, force: :cascade do |t|
+    t.integer "product_id", null: false
+    t.integer "category_id", null: false
+  end
+
+  create_table "distributors", force: :cascade do |t|
+    t.string "zipcode"
+  end
+
   create_table "my_books", force: :cascade do |t|
     t.string "title"
     t.string "author"
@@ -43,7 +52,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_04_073742) do
     t.string "text"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.decimal "price"
+    t.string "price"
     t.integer "user_id", null: false
     t.index ["user_id"], name: "index_products_on_user_id"
   end
@@ -72,6 +81,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_04_073742) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "email", default: "", null: false
+    t.string "address"
   end
 
   add_foreign_key "books", "authors"
