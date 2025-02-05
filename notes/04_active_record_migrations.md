@@ -1048,7 +1048,28 @@
         -> This will show us a list of version numbers for all the migrations that have been 
            successfully applied to our database.
         
-        
+
+
+# 5 Changing Existing Migrations ----
+
+    -> When we make a mistake in a migration and try to fix it, we can't just edit the migration
+       and run it again, because Rails thinks the migration has already been applied. 
+    -> If we try to run 'bin/rails db:migrate' again, Rails will do nothing.
+
+    -> Here's what we should do:
+        > Rollback the migration
+        > Edit the migration
+        > Re-run the migration
+    
+    -> Don't edit migrations that have already been committed to source control, especially if 
+       they've been run in production. 
+    -> This can create problems for our team because it would affect everyone else's setup.
+    -> Instead, create a new migration to apply the changes you want.
+
+    -> If the migration hasn't been committed to source control or hasn’t been used on other
+       machines (like in development), we can safely edit it.
+    -> The revert method can also help if we want to undo a part of a migration in a new 
+       migration, but it's better to create a new migration for changes whenever possible.
 
 
 
