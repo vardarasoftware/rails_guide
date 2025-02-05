@@ -832,6 +832,223 @@
 
         
 
+# 4 Running Migrations -------
+    
+    #-> What is bin/rails 'db:migrate'?
+        -> This command runs all pending migrations in your Rails application
+        -> Migrations are applied in order, based on the timestamp in the migration filename
+    
+    #-> What happens when you run 'db:migrate'?
+        -> Executes the 'change' or 'up' method in migration files that have not been run yet
+        -> Updates the database schema accordingly
+        -> Runs 'db:schema:dump' automatically, which updates 'db/schema.rb' to reflect the latest
+           database structure
+        
+    //--> 
+    bin/rails db:migrate VERSION=20240428000000 
+    <--//
+
+    -> here, '20240428000000' is represent the recent timestamp in our migration file
+
+    ## 4.1 Rolling Back
+
+        -> Sometimes, we need to undo a migration—maybe there was a mistake or we want to modify
+           something. 
+        -> Instead of manually finding the migration version, Rails provides easy rollback 
+           commands.
+        
+        //->
+        bin/rails db:rollback
+        <-//
+        
+        -> To Undo the last migration we simply run this command
+        -> Rails finds the last migration that was applied
+        -> It 'revert' it using 'down' method
+        -> The schema was update accordingly
+
+        # Rolling back multipal migration
+
+        //->
+        bin/rails db:rollback STEP=3
+        <-//
+
+        -> The last 3 migrations will be reversed in order
+        -> Rails executes the down method for each migration.
+
+        # Rolling Back Multiple Migrations and Reapplying
+
+        //->
+        bin/rails db:migrate:redo STEP=3
+        <-//
+
+        -> This will undo and reapply the last 3 migrations
+
+    ## 4.1.1 Transactions
+
+        -> When running migrations, Rails tries to wrap each migration in a database transaction. -> This ensures database consistency by preventing partial migrations from being applied
+           if an error occurs.
+        -> DDL --> Data Definition Language
+
+        //-->
+        class AddEmailToUsers < ActiveRecord::Migration[8.0]
+            def change
+                add_column :users, :email, :string
+            end
+        end
+        <--//
+
+        -> If add_column :users, :email, :string succeeds, Migration is applied.
+        -> If it fails halfway, Rails rolls back everything, leaving the database unchanged.
+
+        # When to Disable DDL Transactions
+
+        //->
+        class ChangeEnum < ActiveRecord::Migration[8.0]
+            disable_ddl_transaction!  # ❌ Disables the automatic transaction
+
+            def up
+                execute "ALTER TYPE model_size ADD VALUE 'new_value'"
+            end
+        end
+        <-//
+
+        -> By calling 'disable_ddl_transaction!', Rails will not wrap this migration in a
+           transaction and let it run
+    
+
+    # 4.2 Setting Up the Database
+
+        The "bin/rails db:setup" command will create the database, load the schema, and initialize it with the seed data.
+
+    
+    # 4.3 Preparing the Database
+
+        -> The 'bin/rails db:prepare' command is used to get your database ready for use
+        -> If the database doesn't exist yet, it will create it, just like 'bin/rails db:setup'
+        -> If the database exists but the tables aren’t created, it will set up the tables, run 
+           any new migrations, update the schema, and load the seed data.
+        -> If everything is already set up, it won't do anything.
+        -> Once the database and tables are set up, it won’t reload the seed data, even if the
+           seed file has changed
+        -> If we need to reload the seed data, need to run 'bin/rails db:seed' manually.
+
+    # 4.4 Resetting the Database
+
+        -> The 'bin/rails db:reset' command will drop the database and set it up again. 
+        -> This is functionally equivalent to 'bin/rails db:drop db:setup'.
+
+    # 4.5 Running Specific Migrations
+
+        -> The 'bin/rails db:migrate:up' and 'bin/rails db:migrate:down' commands allow you to run
+           a specific migration manually
+        -> we can specify the version of the migration we want to apply or undo 
+
+        //->
+        bin/rails db:migrate:up VERSION=20240428000000
+        <-//
+
+        -> This will execute the "up" method of the migration with the version 20240428000000,
+           applying the changes defined in that migration.
+        -> Checking for Existing Migration: Rails will check if the migration exists and if it has
+            already been applied. If it has, it won’t do anything.
+        -> Non-Existing Migration: If you try to run a migration version that doesn't exist, like
+           'bin/rails db:migrate VERSION=20240428000000' 
+        -> Rails will give you an error saying it can't find the migration with that version 
+           number
+        
+    
+    # 4.6 Running Migrations in Different Environments
+
+        -> By default, when we run 'bin/rails db:migrate', it applies migrations to the development
+           environment.
+        -> If we want to run the migrations for a different environment, like 'test', we can 
+           specify that using the 'RAILS_ENV' variable.
+
+        //->
+        $ bin/rails db:migrate RAILS_ENV=test
+        <-//
+
+    # 4.7 Changing the Output of Running Migrations
+
+        -> When we run migrations, Rails usually shows messages telling we what it's doing and how 
+           long each step takes, For example:
+
+            ==  CreateProducts: migrating =================================================
+            -- create_table(:products)
+            -> 0.0028s
+            ==  CreateProducts: migrated (0.0028s) ========================================
+        
+        -> However, you can control this output in different ways using methods in your migration:
+            -> suppress_messages: Hides all output inside the block.
+            -> say: Displays a custom message. You can also choose if it should be indented.
+            -> say_with_time: Shows a message along with how long it took to run that part of the
+               migration.
+        
+        For example:
+        //-->
+        class CreateProducts < ActiveRecord::Migration[8.0]
+            def change
+                suppress_messages do
+                    create_table :products do |t|
+                        t.string :name
+                        t.text :description
+                        t.timestamps
+                    end
+                end
+
+                say "Created a table"
+
+                suppress_messages { add_index :products, :name }
+                say "and an index!", true
+
+                say_with_time "Waiting for a while" do
+                    sleep 10
+                    250
+                end
+            end
+        end
+        <--//
+
+        This will generate the following output:
+
+        ==  CreateProducts: migrating =================================================
+        -- Created a table
+        -> and an index!
+        -- Waiting for a while
+        -> 10.0013s
+        -> 250 rows
+        ==  CreateProducts: migrated (10.0054s) =======================================
+
+        
+        --> If we want no output at all, we can run bin/rails db:migrate VERBOSE=false to 
+            suppress everything.
+        
+    # 4.8 Rails Migration Version Control
+        
+        -> Rails keeps track of which migrations have been run using a special table called
+           schema_migrations. 
+        -> This table is automatically created in our database when you set up Rails.
+        
+        -> When we run a migration, Rails extracts the version number from the migration file
+           name and inserts it into the schema_migrations table.
+        
+        # For example 
+        -> If we have a migration file '20240428000000_create_users.rb', Rails will:
+            ->Extract the version number '20240428000000' from the file name.
+            ->After the migration is successfully applied, it will insert this version number
+              into the schema_migrations table.
+        
+        //->
+        rails dbconsole
+        <-//
+        //->
+        SELECT * FROM schema_migrations;
+        <-//
+
+        -> This will show us a list of version numbers for all the migrations that have been 
+           successfully applied to our database.
+        
+        
 
 
 
