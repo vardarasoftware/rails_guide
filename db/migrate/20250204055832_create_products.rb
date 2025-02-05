@@ -1,8 +1,7 @@
 class CreateProducts < ActiveRecord::Migration[8.0]
   def change
     unless table_exists?(:products) 
-      
-      create_table :products, primary_key: [:customer_id, :product_sku] do |t|
+      create_table :products, primary_key: [ :customer_id, :product_sku ] do |t|
         t.string :name
         t.string :part_number
         t.integer :customer_id
