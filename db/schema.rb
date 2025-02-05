@@ -10,8 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_03_101851) do
-  enable_extension "plpgsql"
+ActiveRecord::Schema[8.0].define(version: 2025_02_05_063040) do
   create_table "authors", force: :cascade do |t|
     t.string "first_name"
     t.string "last_name"
@@ -42,6 +41,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_03_101851) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id"], name: "index_products_on_user_id"
   end
 
   create_table "publication_types", force: :cascade do |t|
@@ -70,5 +71,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_03_101851) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "products", "users"
   add_foreign_key "publications", "publication_types"
 end
