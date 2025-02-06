@@ -10,12 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_06_054240) do
-  create_table "authors", force: :cascade do |t|
-    t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
+ActiveRecord::Schema[8.0].define(version: 2025_02_06_074507) do
+# Could not dump table "authors" because of following StandardError
+#   Unknown type 'uuid' for column 'id'
+
+
+# Could not dump table "authors__forces" because of following StandardError
+#   Unknown type 'uuid' for column 'id'
+
 
   create_table "book_orders", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -52,6 +54,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_054240) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
+
+# Could not dump table "posts" because of following StandardError
+#   Unknown type 'uuid' for column 'id'
+
 
   create_table "products", force: :cascade do |t|
     t.string "title"
@@ -92,5 +98,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_054240) do
   end
 
   add_foreign_key "books", "authors"
+  add_foreign_key "posts", "authors"
   add_foreign_key "products", "users"
 end

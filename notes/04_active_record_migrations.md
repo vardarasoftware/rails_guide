@@ -1277,3 +1277,107 @@
            application status.
         
 
+# 10 Miscellaneous --------
+    
+    # 10.1 Using UUIDs instead of IDs for Primary Keys
+
+        -> By default, Rails uses auto-incrementing integers for primary keys when creating
+           database tables. 
+        -> This means that each new record in a table gets a unique integer ID that increases by 
+           1 with each new entry
+        -> In certain situations, using UUIDs instead of integers for primary keys can be 
+           beneficial.
+        
+        What is UUIDs?
+        -> A UUID (Universally Unique Identifier) is a 128-bit identifier used to uniquely
+           identify information in computer systems
+        -> UUIDs are commonly represented as a 32-character hexadecimal string, divided into five
+           segments, usually in the form of: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        -> Where x is a hexadecimal digit (0-9, a-f), and the segments are separated by dashes
+
+        Why use UUIDs?
+        -> Distributed system
+        -> External integration
+        -> Security and Privacy
+
+    
+    ## 10.1.1 Enabling UUIDs in Rails
+        
+        #-> Rails Configuration
+
+        -> Before using UUIDs in Rails, you need to ensure that your database can handle them. 
+        -> we also need to configure Rails to generate UUIDs as the primary key type by default.
+        -> This is done in the 'config/application.rb' file:
+
+        //-->
+        config.generators do |g|
+            g.orm :active_record, primary_key_type: :uuid
+        end
+        <--//
+
+        -> This setting ensures it will automatically set up the 'id' field as a UUID instead of
+           default integer
+        
+
+        #-> Adding References with UUIDs
+
+        -> When we create relationships between models, such as foreign keys, we need to ensure
+           that the foreign key columns also use UUIDs.
+        
+        //-->
+        create_table :posts, id: :uuid do |t|
+            t.references :author, type: :uuid, foreign_key: true
+            # Other columns...
+            t.timestamps
+        end
+        <--//
+
+        -> It ensures that the 'author_id' column in the 'posts 'table matches the 'id' column in
+           the 'authors' table, both using UUIDs.
+        
+
+        #-> Migration Changes
+        
+        -> When generating a migration for a model, Rails will automatically use UUIDs for the id
+           column
+        
+        //-->
+        $ bin/rails g migration CreateAuthors
+        <--//
+        it will generate this:
+
+        //-->
+        class CreateAuthors < ActiveRecord::Migration[8.0]
+            def change
+                create_table :authors, id: :uuid do |t|
+                t.timestamps
+                end
+            end
+        end
+        <--//
+
+        -> 'id: :uuid' tells Rails to use a UUID for the primary key.
+        
+    # 10.2 Data Migrations
+
+        -> Data migrations are changes to the data in your database, such as transforming or
+           moving data between columns, tables, or even databases
+        
+        #> Separation of Concerns
+            -> 'Schema changes' and 'data changes' have different roles.
+            -> 'Schema migrations' affect the structure of the database, changing how data is
+                stored
+        
+        #> Rollback Complexity
+            -> If we make a mistake in a data migration, rolling it back can be complicated
+            -> Schema migrations are typically easier to roll back because they deal with
+               structural changes, which can often be undone without major side effects.
+        
+        #> Performance Concerns
+            -> Data migrations can be expensive operations, especially if you're updating or
+               moving a large amount of data.
+            -> These types of migrations can lock your tables for a significant amount of time,
+               potentially affecting application performance or availability.
+        
+        
+
