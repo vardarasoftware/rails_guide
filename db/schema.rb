@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_06_070957) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_06_072927) do
   create_table "authors", force: :cascade do |t|
     t.string "first_name"
     t.string "last_name"
@@ -43,11 +43,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_070957) do
     t.index ["product_id"], name: "index_categories_products_on_product_id"
   end
 
+# Could not dump table "create_posts" because of following StandardError
+#   Unknown type 'uuid' for column 'id'
+
+
   create_table "movie_genres", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
+
+# Could not dump table "posts" because of following StandardError
+#   Unknown type 'uuid' for column 'id'
+
 
   create_table "products", force: :cascade do |t|
     t.string "name"
@@ -85,6 +93,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_070957) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "create_posts", "authors"
+  add_foreign_key "posts", "authors"
   add_foreign_key "products", "users"
   add_foreign_key "publications", "publication_types"
 end

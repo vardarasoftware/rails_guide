@@ -722,8 +722,46 @@ end
 
 - `db/schema.rb` or `db/structure.sql` represents the current database state.
 
-- Old migration files can be deleted but remain referenced in schema_migrations.
+- Old migration files can be deleted but remain referenced in `schema_migrations`.
 
-- Run bin/rails db:migrate:status to check migration statuses.
+- Run bin/rails `db:migrate:status` to check migration statuses.
 
 - Deleting and re-running engine migrations may create new files with new timestamps.
+
+# 9. Using UUIDs Instead of IDs for Primary Keys
+
+- Rails defaults to auto-incrementing integers for primary keys.
+
+- UUIDs are useful for distributed systems and external integrations.
+
+- PostgreSQL may require `pgcrypto` for UUID support.
+
+```ruby Configuration:
+
+config.generators do |g|
+  g.orm :active_record, primary_key_type: :uuid
+end
+```
+```ruby Example Migration:
+
+class CreateAuthors < ActiveRecord::Migration[8.0]
+  def change
+    create_table :authors, id: :uuid do |t|
+      t.timestamps
+    end
+  end
+end
+```
+
+- UUIDs ensure uniqueness across systems but may impact performance.
+
+- They are beneficial for security as they do not expose record count.
+
+## Data Migrations
+
+- Schema changes and data changes should be handled separately.
+
+- Data migrations should not be done in migration files due to rollback complexity and performance issues.
+
+- Use the `maintenance_tasks` gem for safe and efficient data migration management.
+
