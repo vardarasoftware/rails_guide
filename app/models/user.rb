@@ -6,4 +6,6 @@ class User < ApplicationRecord
     def log_new_user
       puts "A new user was registered"
     end
+  has_many :products
+  has_many :publications, as: :publisher
 end
