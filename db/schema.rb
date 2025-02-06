@@ -10,14 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_06_074507) do
-# Could not dump table "authors" because of following StandardError
-#   Unknown type 'uuid' for column 'id'
-
-
-# Could not dump table "authors__forces" because of following StandardError
-#   Unknown type 'uuid' for column 'id'
-
+ActiveRecord::Schema[8.0].define(version: 2025_02_06_090032) do
+  create_table "authors", force: :cascade do |t|
+    t.string "first_name"
+    t.string "last_name"
+    t.text "bio"
+    t.date "date_of_birth"
+    t.string "nationality"
+    t.string "email"
+    t.string "website"
+    t.integer "total_books"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "book_orders", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -55,17 +60,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_074507) do
     t.datetime "updated_at", null: false
   end
 
-# Could not dump table "posts" because of following StandardError
-#   Unknown type 'uuid' for column 'id'
-
-
-  create_table "products", force: :cascade do |t|
+  create_table "posts", force: :cascade do |t|
     t.string "title"
-    t.string "text"
+    t.text "content"
+    t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "price"
+    t.index ["user_id"], name: "index_posts_on_user_id"
+  end
+
+  create_table "products", primary_key: ["customer_id", "product_sku"], force: :cascade do |t|
+    t.string "name"
+    t.integer "customer_id"
+    t.string "product_sku"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.string "price"
     t.string "category"
     t.index ["user_id"], name: "index_products_on_user_id"
   end
@@ -98,6 +110,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_074507) do
   end
 
   add_foreign_key "books", "authors"
-  add_foreign_key "posts", "authors"
+  add_foreign_key "posts", "users"
   add_foreign_key "products", "users"
 end
