@@ -217,7 +217,7 @@ class AddEmailToUsers < ActiveRecord::Migration[8.0]
 end
 ```
 
-# 3 Updating Migrations
+# 3. Updating Migrations
 
 Once you have created your migration file using one of the generators from the above section, you can update the generated migration file in the `db/migrate` folder to define further changes you want to make to your database schema.
 
@@ -470,3 +470,148 @@ While migrations are the recommended way to modify the database schema, you can 
 ```ruby
 execute "ALTER TABLE products ADD COLUMN price DECIMAL(10, 2)"
 ```
+
+## 4.1 Running Migration
+
+### Run all the pending migration
+
+```ruby
+bin/rails db:migrate
+```
+- Runs `change` or `up` methods for all new migrations and updates `db/schema.rb` accordingly.
+
+### Run migrations up to a specific version:
+
+```bash
+
+bin/rails db:migrate VERSION=20240428000000
+```
+Runs migrations `up` or `down` to the specified version.
+
+## 4.2 Rolling Back Migrations
+
+### Rollback the last migration:
+
+```bash
+
+bin/rails db:rollback
+```
+- Reverts the last migration using the `down` method or by reversing the `change` method.
+
+### Rollback multiple migrations:
+
+```bash
+
+bin/rails db:rollback STEP=3
+```
+
+- Reverts the last 3 migrations.
+
+### Redo (rollback and reapply) migrations:
+
+```bash
+bin/rails db:migrate:redo STEP=3
+```
+- Rolls back and reapplies the last 3 migrations.
+
+## 4.3. Running Specific Migrations
+
+### Run a specific migration:
+
+```bash
+
+bin/rails db:migrate:up VERSION=20240428000000
+```
+- Runs the `up` method (or change method) for the specified migration version.
+
+### Rollback a specific migration:
+
+```bash
+
+bin/rails db:migrate:down VERSION=20240428000000
+```
+- Runs the `down` method for the specified migration version.
+
+## 4.4. Database Setup & Reset
+
+### Create database, load schema, and seed data:
+
+```bash
+
+bin/rails db:setup
+```
+- Sets up the database with schema and initial data.
+
+### Prepare the database idempotently:
+
+```bash
+bin/rails db:prepare
+```
+- Ensures the database is properly set up without duplicating work.
+
+### Reset database (drop and re-setup):
+
+```bash
+bin/rails db:reset
+```
+- Drops and recreates the database.
+
+## 4.5. Running Migrations in Different Environments
+
+### Run migrations in the test environment:
+
+```bash
+
+bin/rails db:migrate RAILS_ENV=test
+```
+- Runs migrations for the test database instead of development.
+
+## 4.6. Managing Migration Transactions
+
+### Disable automatic transaction handling in a migration:
+
+```ruby
+
+class ChangeEnum < ActiveRecord::Migration[8.0]
+  disable_ddl_transaction!
+
+  def up
+    execute "ALTER TYPE model_size ADD VALUE 'new_value'"
+  end
+end
+```
+- Useful when performing operations that cannot be wrapped in a transaction.
+
+### 4.7. Controlling Migration Output
+
+### Suppress output of specific migration actions:
+
+```ruby
+
+suppress_messages do
+  create_table :products do |t|
+    t.string :name
+    t.text :description
+    t.timestamps
+  end
+end
+```
+- Prevents unnecessary output during migration execution.
+
+### Suppress all migration output:
+
+```bash
+
+bin/rails db:migrate VERBOSE=false
+```
+- Runs migrations silently.
+
+## 4.8. Checking Migration History
+
+### View applied migrations:
+
+```sql
+
+SELECT * FROM schema_migrations;
+```
+- Lists all executed migration versions stored in the database.
