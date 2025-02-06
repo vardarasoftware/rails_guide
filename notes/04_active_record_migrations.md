@@ -1227,4 +1227,53 @@
         -> This executes 'db/seeds.rb' and populates the database.
 
 
+# 9 Old Migrations ---------
+
+    -> When working with Rails, the 'db/schema.rb' or 'db/structure.sql' file acts as a snapshot
+       of our database’s current structure. 
+    -> This allows us to rebuild the database without replaying all migration files.
+    -> Once migrations are executed, Rails records their timestamps in a special database table
+       called 'schema_migrations'.
+    -> Since 'db/schema.rb' already has the latest database structure, we can delete
+       old migration files from 'db/migrate/'.
+    -> If a migration file was already executed and then gets deleted, Rails still remembers it
+       because its timestamp is recorded in 'schema_migrations'.
+    -> If we run "bin/rails db:migrate:status" and it will show something like this 
+    //->
+    ********** NO FILE **********
+    <-//
+
+    -> This means Migration was applied but the file is missing from 'db/migrate/'.
+
+
+    ## 9.1 Migrations from Engines
+
+        What is Engines?
+        -> In rails, Engines is a self contained Rails application that can be use as a component or module in large rails application.
+        -> It's like a mini application that we can plug into our main application to provide
+           reuseable functionality.
+        
+        Advantages of using Engines->
+        -> Modularity
+        -> Reusability
+        -> Isolation 
+
+        Migrations from engines in rails
+
+        -> Idempotent Migration 
+            -> Idempotent means that the result of the task will be same no matter how many times
+               we run it
+            -> Previously installed migrations are skipped, and only new missing migrations are
+               copied to 'db/migrate/' with a new timestamp
+
+        -> If we delete engine migrations and rerun the install task, Rails generates new
+           migration files with new timestamps and run again when we execute 'db:migrate'.
+        
+        //-->
+        # This migration comes from <engine_name> (originally <timestamp>)
+        <--//
+
+        -> This comment identifies the origin of the migration and helps Rails manage its
+           application status.
+        
 
