@@ -1153,4 +1153,25 @@
         -> This will reapply migrations and regenerate the schema file correctly
 
 
+# 7 Active Record and Referential Integrity -----
+
+    -> In Rails, the Active Record pattern suggest that most logic should be in our models not in
+       database.
+    -> Rails prefers handling things like 'validation' and 'association' in the application code
+    
+    //->
+    validates :email, uniqueness: true
+    <-//
+
+    -> This ensures an email is unique before saving, but it only works inside the application
+
+    # Associations with :dependent Option
+    -> This makes sure that when a parent object is deleted, all related child objects are also
+       deleted.
+    -> It does not prevent orphaned records if the database is accessed directly
+
+    -> 'Foreign Key Constraints' ensures referential integrity
+    -> 'Unique Indexes' ensures values remain unique at the database level, even if validations
+        are skipped.
+    
 
