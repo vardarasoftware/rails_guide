@@ -1175,3 +1175,56 @@
         are skipped.
     
 
+# 8 Migrations and Seed Data -----
+
+    -> Rails provides two important features to modify the database and populate initial data:
+        > Migrations
+        > Seed Data
+    
+    #> Migrations: modify the database
+        
+        -> Migrations are used to change the structure of the database, such as adding/removing
+           tables, columns, or data.
+        -> It allow incremental updates without needing to recreate the entire database.
+        
+        //-->
+        class AddInitialProducts < ActiveRecord::Migration[8.0]
+            def up
+                5.times do |i|
+                Product.create(name: "Product ##{i}", description: "A product.")
+                end
+            end
+
+            def down
+                Product.delete_all
+            end
+        end
+        <--//
+
+        -> up = Runs when migrating forward
+        -> down = Runs when rolling back
+
+    
+    #> Seeds: populating initial data
+
+        -> The seeds feature in Rails allows us to populate a database after it's created,
+           making it useful for development, testing, and production setup.
+        -> Faster and more flexible than writing migrations for initial data.
+        -> 'Reusable' The same file can be executed multiple times without duplicate data.
+        
+        //-->
+        ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
+            MovieGenre.find_or_create_by!(name: genre_name)
+        end
+        <--//
+
+        -> This ensures that if the genre already exists, it won't be duplicated
+        
+        //->
+        bin/rails db:seed
+        <-//
+
+        -> This executes 'db/seeds.rb' and populates the database.
+
+
+
