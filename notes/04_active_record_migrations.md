@@ -615,3 +615,56 @@ bin/rails db:migrate VERBOSE=false
 SELECT * FROM schema_migrations;
 ```
 - Lists all executed migration versions stored in the database.
+
+# 5. Schema and Schema Dump
+
+## 5.1 Load Schema
+
+- Instead of running all migrations, you can load the schema using
+
+```bash
+bin/rails db:schema:load
+```
+
+## 5.2 Types of Schema Dumps
+
+### 5.2.1 Default `:ruby` Schema Format(db/schema.rb)
+
+```ruby
+ActiveRecord::Schema[8.0].define(version: 2008_09_06_171750) do
+  create_table "authors", force: true do |t|
+    t.string   "name"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "products", force: true do |t|
+    t.string   "name"
+    t.text     "description"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "part_number"
+  end
+end
+```
+
+### 5.2.2 Using the :sql Schema Format
+
+- To enable :sql schema format, update `config/application.rb`
+
+```ruby
+config.active_record.schema_format = :sql
+```
+
+- This stores the schema in `SQL` format inside `db/structure.sql`.
+
+- To work this, Instead of `db/schema.rb`, Rails runs database-specific dump commands:
+
+#### PostgreSQL → `Uses pg_dump`
+#### MySQL & MariaDB → `Uses SHOW CREATE TABLE`
+
+- To load the schema from SQL format:
+
+```sh
+bin/rails db:schema:load
+```
