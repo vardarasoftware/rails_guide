@@ -8,6 +8,3 @@ require_relative "../app/models/movie_genre"
 [ "Action", "Comedy", "Drama", "Horror" ].each do |genre_name|
     MovieGenre.find_or_create_by!(name: genre_name)
 end
-
-author = Author.create(id: SecureRandom.uuid)
-post = Post.create(id: SecureRandom.uuid, author: author)
