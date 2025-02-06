@@ -668,3 +668,62 @@ config.active_record.schema_format = :sql
 ```sh
 bin/rails db:schema:load
 ```
+
+# 6. Active Record and Referential Integrity
+
+- Active Record encourages keeping intelligence in models rather than databases.
+
+- Database constraints like triggers are not favored but can be useful.
+
+- Validations `(validates :foreign_key, uniqueness: true)` enforce integrity at the model level.
+
+- The `:dependent` option ensures cascading deletions but does not guarantee referential integrity.
+
+- Foreign key constraints and unique indexes are safer at the database level.
+
+- Active Record does not directly support foreign key constraints, but SQL commands can be executed manually.
+
+- Best practice: Complement Active Record with database-level constraints for data integrity.
+
+# 7. Migrations and Seed Data
+
+- Migrations modify the schema consistently and can be used to modify data.
+
+- Rails migrations help manage schema changes in production without dropping the database.
+
+```ruby Example Migration:
+
+class AddInitialProducts < ActiveRecord::Migration[8.0]
+  def up
+    5.times do |i|
+      Product.create(name: "Product ##{i}", description: "A product.")
+    end
+  end
+  
+  def down
+    Product.delete_all
+  end
+end
+```
+- Rails `seeds` feature initializes data efficiently.
+
+- Run `bin/rails db:seed` to populate initial data.
+
+- Seed data should be idempotent (safe to run multiple times).
+
+```ruby Example Seed Data:
+
+["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
+  MovieGenre.find_or_create_by!(name: genre_name)
+end
+```
+
+# 8.Old Migrations
+
+- `db/schema.rb` or `db/structure.sql` represents the current database state.
+
+- Old migration files can be deleted but remain referenced in schema_migrations.
+
+- Run bin/rails db:migrate:status to check migration statuses.
+
+- Deleting and re-running engine migrations may create new files with new timestamps.
