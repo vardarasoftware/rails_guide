@@ -10,7 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_06_094443) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_07_105655) do
+  create_table "accounts", force: :cascade do |t|
+    t.string "subdomain"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "email"
+  end
+
   create_table "authors", force: :cascade do |t|
     t.string "first_name"
     t.string "last_name"
@@ -32,10 +39,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_094443) do
   create_table "books", force: :cascade do |t|
     t.string "title"
     t.string "author"
+    t.bigint "library_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "author_id"
-    t.index ["author_id"], name: "index_books_on_author_id"
   end
 
   create_table "categories_products", id: false, force: :cascade do |t|
@@ -43,8 +49,37 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_094443) do
     t.integer "category_id", null: false
   end
 
+  create_table "coffees", force: :cascade do |t|
+    t.string "size"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "distributors", force: :cascade do |t|
     t.string "zipcode"
+  end
+
+  create_table "holidays", force: :cascade do |t|
+    t.string "name"
+    t.date "holiday_date"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "libraries", force: :cascade do |t|
+    t.string "name"
+    t.string "location"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "line_items", force: :cascade do |t|
+    t.integer "order_id", null: false
+    t.string "product_name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "index_line_items_on_order_id"
   end
 
   create_table "movie_genres", force: :cascade do |t|
@@ -60,8 +95,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_094443) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "orders", force: :cascade do |t|
+    t.decimal "total"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "people", force: :cascade do |t|
     t.string "name"
+    t.string "surname"
+    t.string "email"
+    t.string "bio"
+    t.string "password", null: false
+    t.string "registration_number", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "players", force: :cascade do |t|
+    t.decimal "points"
+    t.integer "games_played"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -85,12 +138,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_094443) do
     t.integer "user_id", null: false
     t.string "price"
     t.string "category"
+    t.string "legacy_code"
     t.index ["user_id"], name: "index_products_on_user_id"
   end
 
   create_table "products_users", id: false, force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "product_id", null: false
+  end
+
+  create_table "promotions", force: :cascade do |t|
+    t.date "start_date"
+    t.date "end_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "publications", force: :cascade do |t|
@@ -106,6 +167,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_094443) do
     t.index ["publisher_type", "publisher_id"], name: "index_publications_on_publisher"
   end
 
+  create_table "suppliers", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "title"
     t.string "author"
@@ -115,7 +182,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_06_094443) do
     t.string "address"
   end
 
-  add_foreign_key "books", "authors"
+  add_foreign_key "line_items", "orders"
   add_foreign_key "posts", "users"
   add_foreign_key "products", "users"
 end
