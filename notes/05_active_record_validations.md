@@ -903,4 +903,135 @@
             -> 'desktop?' returns 'true', AND
             -> 'trackpad' is not present
 
+    
+## 6 Performing Custom Validations
+
+    ## 6.1 Custom Validators
+
+        -> we can define custom validators when built-in validations "validates :name, presence: 
+           true" are not enough
+        -> There are two main ways to create custom validators:
+            -> Using ActiveModel::Validator
+            -> Using ActiveModel::EachValidator
         
+        #> Using ActiveModel::Validator
+        ```
+        class MyValidator < ActiveModel::Validator
+            def validate(record)
+                unless record.name.start_with? "X"
+                    record.errors.add :name, "Provide a name starting with X, please!"
+                end
+            end
+        end
+
+        class Person < ApplicationRecord
+            validates_with MyValidator
+        end
+        ```
+
+        -> 'MyValidator' inherits from 'ActiveModel::Validator' and implements 'validate(record)'.
+        -> 'record' is the instance being validated (e.g., a 'Person' object).
+        -> If 'record.name' does not start with "X", it adds an error.
+        -> 'validates_with MyValidator' tells Rails to use this validator for 'Person'.
+
+        #> Using ActiveModel::EachValidator
+        ```
+        class EmailValidator < ActiveModel::EachValidator
+            def validate_each(record, attribute, value)
+                unless URI::MailTo::EMAIL_REGEXP.match?(value)
+                    record.errors.add attribute, (options[:message] || "is not an email")
+                end
+            end
+        end
+
+        class Person < ApplicationRecord
+            validates :email, presence: true, email: true
+        end
+        ```
+
+        -> 'EmailValidator' inherits from 'ActiveModel::EachValidator' and implements 
+           'validate_each'.
+        -> 'record' is the object being validated.
+        -> 'attribute' is the attribute being checked (e.g., ':email').
+        -> 'value' is the actual value of the attribute ('record.email').
+        -> If the value does not match the email regex, it adds an error.
+        -> 'validates :email, email: true' applies the custom validator.
+
+    
+
+    ## 6.2 Custom Methods
+
+        -> Sometimes, built-in validations (validates :name, presence: true) or even custom
+           validators (validates_with or EachValidator) are not flexible enough for specific use cases. 
+        -> That's where custom validation methods come in.
+
+        -> we can define methods inside a model to perform custom validation logic
+        -> If the condition fails, add an error to the errors collection.
+        -> Be registered using validate :method_name.
+
+        ```
+        class Invoice < ApplicationRecord
+            validate :expiration_date_cannot_be_in_the_past,
+                :discount_cannot_be_greater_than_total_value
+
+            def expiration_date_cannot_be_in_the_past
+                if expiration_date.present? && expiration_date < Date.today
+                    errors.add(:expiration_date, "can't be in the past")
+                end
+            end
+
+            def discount_cannot_be_greater_than_total_value
+                if discount > total_value
+                    errors.add(:discount, "can't be greater than total value")
+                end
+            end
+        end
+        ```
+
+        -> Calls the method 'expiration_date_cannot_be_in_the_past'.
+        -> If 'expiration_date' is in the past, it adds an error.
+        -> Calls the method 'expiration_date_cannot_be_in_the_past'.
+        -> If 'expiration_date' is in the past, it adds an error.
+
+
+        ```
+        class Invoice < ApplicationRecord
+            validate :active_customer, on: :create
+
+            def active_customer
+                errors.add(:customer_id, "is not active") unless customer.active?
+            end
+        end
+        ```
+
+        -> 'validate :active_customer', 'on: :create ensures' that
+        -> The 'active_customer' validation only runs when creating (Invoice.new.save).
+        -> It does not run on updates (invoice.update(...)).
+        -> If 'customer.active?' is false, an error is added.
+        -> This prevents creating an invoice for inactive customers but allows updates on
+           existing invoices.
+
+    
+
+    ## 6.3 Listing Validators
+
+        -> To retrieve all the validators applied to a model or a specific attribute we can use
+           'validators' and 'validators_on' in Rails.
+        
+        ```
+        class Person < ApplicationRecord
+            validates :name, presence: true, on: :create
+            validates :email, format: URI::MailTo::EMAIL_REGEXP
+            validates_with MyOtherValidator, strict: true
+        end
+        ```
+
+        -> A presence validation for 'name'
+        -> A format validation for 'email'
+        -> A custom validator ('MyOtherValidator') applied with strict mode.
+
+        
+
+
+
+
