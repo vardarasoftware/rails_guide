@@ -4,7 +4,7 @@ class GoodnessValidator < ActiveModel::Validator
         record.errors.add :base, "This person is evil"
       end
     end
-end  
+end
 class Person < ApplicationRecord
     validates_with GoodnessValidator, fields: [ :name, :surname ]
     validates_each :name, :surname do |record, attr, value|
