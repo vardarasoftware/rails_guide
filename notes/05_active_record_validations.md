@@ -1030,7 +1030,234 @@
         -> A format validation for 'email'
         -> A custom validator ('MyOtherValidator') applied with strict mode.
 
+
+
+## 7 Working with Validation Errors
+
+    -> The valid? and invalid? methods in Rails provide a summary status of whether a model
+       object passes validation. 
+    -> If we want to understand why an object is invalid, you need to inspect the errors 
+       collection.
+    
+
+    ## 7.1 errors
+
+        -> Rails manages validation errors using the 'ActiveModel::Errors' class. 
+        -> Each error is represented as an 'ActiveModel::Error' object, allowing us to dig deeper
+           into why a validation failed.
         
+        ```
+        class Person < ApplicationRecord
+            validates :name, presence: true, length: { minimum: 3 }
+        end
+        ```
+
+        -> 'presence: true' → Name must be present.
+        -> 'length: { minimum: 3 }' → Name must be at least 3 characters long.
+    
+
+    ## 7.2 errors[]
+
+        -> when an object fails validation, error messages are stored in the errors collection. -> The errors[] method is used to retrieve all error messages for a specific attribute.
+        -> When the attribute is valid = errors[:attribute] returns an empty array [].
+        -> When the attribute has validation errors = errors[:attribute] returns an array of
+           error messages for that attribute.
+        
+    
+    ## 7.3 errors.where and Error Object
+
+        -> When a Rails model fails validation, it stores error details in 'ActiveModel::Errors'.
+        -> The 'errors.where' method allows filtering and retrieving specific validation errors 
+           instead of fetching all messages at once.
+        
+        ```
+        class Person < ApplicationRecord
+            validates :name, presence: true, length: { minimum: 3 }
+        end
+        ```
+
+        -> 'name' must not be blank and must have at least 3 characters.
+
+        ```
+        irb> person = Person.new
+        irb> person.valid?
+        => false
+        ```
+        -> Since name is missing, the object is invalid, and errors will contain validation 
+           failures.
+
+        
+        ```
+        irb> person.errors.where(:name)
+        => [#<ActiveModel::Error attribute=:name, type=:blank>,
+            #<ActiveModel::Error attribute=:name, type=:too_short, options={:count=>3}>]
+        ```
+
+        -> Two errors are returned:
+            -> ':blank' → Because the name is missing.
+            -> ':too_short' → Because the name is shorter than 3 characters.
+        
+        ```
+        irb> error.message
+        => "is too short (minimum is 3 characters)"
+        ```
+
+        -> The error message does not include the attribute name.
+
+        ```
+        irb> error.full_message
+        => "Name is too short (minimum is 3 characters)"
+        ```
+        -> The 'full_message' prepends the attribute name for better readability.
+
+    ## 7.4 errors.add
+
+        -> The 'errors.add' method is used to manually add custom validation errors to a model
+           attribute. 
+        -> This is useful when implementing custom validators beyond the built-in ones.
+
+        ```
+        class Person < ApplicationRecord
+            validate do |person|
+                errors.add :name, :too_plain, message: "is not cool enough"
+            end
+        end
+        ```
+
+        -> The validate block runs every time a Person object is validated.
+        -> Error type: :too_plain
+        -> Custom message: "is not cool enough"
+
+        ```
+        irb> person = Person.create
+        irb> person.errors.where(:name).first.type
+        => :too_plain
+        irb> person.errors.where(:name).first.full_message
+        => "Name is not cool enough"
+        ```
+
+        -> The first error related to name has a type of ':too_plain', which we defined in 
+           'errors.add'.
+        -> full_message automatically formats the error as:
+            -> "Name is not cool enough"
+            -> This prepends "Name" to the message for better readability
+        
+    
+    ## 7.5 errors[:base]
+
+        -> validation errors are usually associated with a specific attribute (like name, email,
+           etc.).
+        -> Sometimes an entire object might be considered invalid, regardless of a single
+           attribute.
+        -> we can use :base as the attribute when calling errors.add.
+        -> This allows us to add an error to the object itself, rather than a specific field.
+
+        ```
+        class Person < ApplicationRecord
+            validate do |person|
+                errors.add :base, :invalid, message: "This person is invalid because ..."
+            end
+        end
+        ```
+
+        -> The validate block runs every time an object is validated.
+        -> Instead of attaching an error to a field like name, we attach it to :base, meaning:
+           "There is a general issue with this object as a whole."
+        -> The error type is :invalid.
+        -> A custom message is added: "This person is invalid because ..."
+
+        ```
+        irb> person = Person.create
+        irb> person.errors.where(:base).first.full_message
+        => "This person is invalid because ..."
+        ```
+        -> The error is attached to ':base', meaning it is not linked to a specific attribute.
+        -> The 'full_message' formats the error into a readable string.
+
+    
+    ## 7.6 errors.size
+
+        -> when we validate an object, the errors collection stores all validation failures.
+        -> The size method is used to count the total number of validation errors present in the
+           object.
+        
+        ```
+        class Person < ApplicationRecord
+            validates :name, presence: true, length: { minimum: 3 }
+        end
+        ```
+
+        -> The name attribute: Must be present (presence: true).
+        -> Must have at least 3 characters (length: { minimum: 3 }).
+
+        ```
+        irb> person = Person.new
+        irb> person.valid?
+        => false
+        irb> person.errors.size
+        => 2
+        ```
+        -> 'name' is not provided, so it fails validation.
+        -> The 'valid?' method checks if there are errors.
+        -> Since 'name' is required and missing, it returns false.
+        -> Two errors are recorded:
+            "Name can't be blank" (presence validation).
+            "Name is too short (minimum is 3 characters)" (length validation).
+        -> The errors.size method counts these errors and returns 2.
+        
+        ```
+        irb> person = Person.new(name: "Andrea", email: "andrea@example.com")
+        irb> person.valid?
+        => true
+        irb> person.errors.size
+        => 0
+        ```
+        -> 'name' is provided and has more than 3 characters.
+        -> The object meets all validation rules, so valid? returns true.
+        -> Since there are no validation errors, errors.size returns 0.
+
+    
+    ## 7.7 errors.clear
+
+        -> 'errors.clear' removes all validation errors from the errors collection, but it does
+           not make the object valid. 
+        -> The next time validations are triggered, the errors will be recalculated.
+
+        ```
+        class Person < ApplicationRecord
+            validates :name, presence: true, length: { minimum: 3 }
+        end
+        ```
+
+        -> The name attribute: Must be present (presence: true).
+        -> Must have at least 3 characters (length: { minimum: 3 }).
+
+        "irb> person = Person.new"
+        -> 'name' is not provided, so validation will fail.
+
+        "irb> person.valid?
+        => false"
+        -> The object fails validation due to the missing 'name'.
+
+        "irb> person.errors.empty?
+        => false"
+        -> The 'errors' collection is not empty because there are validation 'errors'.
+
+        "irb> person.errors.clear"
+        -> Removes all validation error messages from the errors collection.
+
+        "irb> person.errors.empty?
+        => true"
+        -> Even though the object is still invalid, the errors collection is temporarily empty.
+
+        "irb> person.save
+        => false"
+        -> When you try to save the object, Rails re-runs validations.
+        -> Since name is still missing, it fails validation again.
+
+        "irb> person.errors.empty?
+        => false"
+        -> The errors collection is refilled with the validation errors.
 
 
 
