@@ -671,3 +671,124 @@
         -> We can pass options to make validators reusable.
         -> Avoid instance variables in validators unless using a new instance for each validation.
         
+
+## 3 Common Validation Options
+
+    -> These are common options that you can use with validation methods in 
+       'ActiveModel::Validations' to customize how they work.
+    
+    -> ':allow_nil' – This means "skip the validation if the value is nil". It won’t show an error
+        if the value is missing.
+    -> ':allow_blank' – Similar to ':allow_nil', but broader. This means "skip the validation if
+       the value is blank" 
+    -> ':message' – Lets we set a custom error message instead of the default one. For example,
+       instead of "can't be blank," you could make it say, "This field is required!"
+    -> ':on' – Lets we control when the validation should run. For example, 
+       we might want a validation to run only when a record is created or only when updated
+    -> ':strict' – Instead of just adding an error message, this option raises an exception if
+       validation fails. 
+        > This is useful when you want the program to stop immediately if something is invalid.
+    -> ':if' and ':unless' – These allow you to conditionally apply validation.
+        > 'if: condition' → Runs the validation only if the condition is true.
+        > 'unless: condition' → Skips the validation if the condition is true.
+
+    ## 1. :allow_nil
+
+        -> This option skips validation if the attribute is nil (completely missing).
+
+        ```
+        class Coffee < ApplicationRecord
+            validates :size, inclusion: { in: %w(small medium large),
+                message: "%{value} is not a valid size" }, allow_nil: true
+        end
+        ```
+
+        -> If 'size' is 'nil', validation does not run, and it is considered valid.
+        -> If 'size' is "mega" (which is not in the list), validation fails.
+
+
+    ## 2. :allow_blank
+
+        -> Similar to ':allow_nil', but broader. It skips validation if the value is blank.
+
+        ```
+        class Topic < ApplicationRecord
+            validates :title, length: { is: 5 }, allow_blank: true
+        end
+        ```
+
+        -> If 'title' is 'nil' or "", validation does not run, and it is valid.
+        -> If 'title' is "Hi", validation fails (because it’s not exactly 5 characters long).
+
+    
+    ## 3. :message
+
+        -> This lets we set a custom error message instead of using the default one.
+        -> we can use placeholders (%{value}, %{attribute}, %{model}) to dynamically insert values.
+
+        ```
+        class Person < ApplicationRecord
+            validates :name, presence: { message: "must be given please" }
+            validates :age, numericality: { message: "%{value} seems wrong" }
+        end
+        ```
+
+        -> If 'name' is missing, it shows: "must be given please".
+        -> If 'age' is invalid (e.g., "ten" instead of 10), it shows: "ten seems wrong".
+
+        ```
+        class Person < ApplicationRecord
+            validates :username, uniqueness: {
+                message: ->(object, data) do
+                    "Hey #{object.name}, #{data[:value]} is already taken."
+                end
+            }
+        end
+        ```
+
+        -> If a duplicate username is found, it gives a personalized message like:
+           "Hey John, johndoe is already taken."
+
+    
+    ## 4. :on
+        
+        -> Controls when validation should happen. By default, validations run on both create and
+           update.
+        -> we can specify when they should apply:
+            -> 'on: :create' → Only when a new record is created.
+            -> 'on: :update' → Only when updating an existing record.
+            -> 'on: :custom_context' → Custom validation that runs only in specific situations.
+
+        ```
+        class Person < ApplicationRecord
+            validates :email, uniqueness: true, on: :create
+            validates :age, numericality: true, on: :update
+            validates :name, presence: true 
+        end
+        ```
+        -> When creating a new 'Person', it checks if 'email' is unique but ignores 'age'.
+        -> When updating a 'Person', it checks if 'age' is a number but ignores 'email'.
+        -> 'name' is always validated.
+
+
+        ```
+        class Person < ApplicationRecord
+            validates :email, uniqueness: true, on: :account_setup
+            validates :age, numericality: true, on: :account_setup
+        end
+        ```
+
+        -> These validations only run when checked with 'valid?(:account_setup)'.
+
+
+        ```
+        class Book
+            include ActiveModel::Validations
+            validates :title, presence: true, on: [:update, :ensure_title]
+        end
+        ```
+
+        -> If a validation has multiple contexts ([:update, :ensure_title]), it will run if either
+           context is triggered.
+        
+        
