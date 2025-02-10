@@ -4,4 +4,8 @@ class User < ApplicationRecord
       def log_new_user
         puts "A new user was registered"
       end
+    with_options if: :is_admin? do |admin|
+      admin.validates :password, length: { minimum: 10 }
+      admin.validates :email, presence: true
+    end
 end

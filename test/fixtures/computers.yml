@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  mouse: MyString
+  trackpad: MyString
+  market: MyString
+
+two:
+  mouse: MyString
+  trackpad: MyString
+  market: MyString

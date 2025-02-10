@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_10_052930) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_10_061240) do
   create_table "accounts", force: :cascade do |t|
     t.string "subdomain"
     t.datetime "created_at", null: false
@@ -51,6 +51,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_052930) do
 
   create_table "coffees", force: :cascade do |t|
     t.string "size"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "computers", force: :cascade do |t|
+    t.boolean "desktop"
+    t.string "mouse"
+    t.string "trackpad"
+    t.string "market"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -99,6 +108,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_052930) do
     t.decimal "total"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "payment_type"
+    t.string "card_number"
   end
 
   create_table "people", force: :cascade do |t|
@@ -195,6 +206,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_052930) do
     t.datetime "updated_at", null: false
     t.string "email", default: "", null: false
     t.string "address"
+    t.boolean "is_admin"
+    t.string "password"
   end
 
   add_foreign_key "line_items", "orders"

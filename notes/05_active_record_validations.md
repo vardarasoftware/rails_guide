@@ -809,4 +809,98 @@
     -> It stops execution immediately if the validation fails.
     -> Useful when you want to ensure critical data is always present.
 
+    ```
+    class TokenGenerationException < StandardError; end
 
+    class Person < ApplicationRecord
+        validates :token, presence: true, uniqueness: true, strict: TokenGenerationException
+    end
+    ```
+    
+    -> Allows better error handling in different parts of your application.
+    -> You can rescue specific errors and take different actions.
+
+
+## 5 Conditional Validation
+
+    -> Rails applies validations every time an object is saved. But sometimes, we only want to
+       validate under specific conditions. 
+    -> That's where ':if' and ':unless' come in
+
+    ## 5.1 Using a Symbol with :if and :unless
+
+        -> This is the most common way to apply conditional validation. 
+        -> we provide the name of a method, and Rails calls it before validation.
+
+        ```
+        class Order < ApplicationRecord
+            validates :card_number, presence: true, if: :paid_with_card?
+
+            def paid_with_card?
+                payment_type == "card"
+            end
+        end
+        ```
+
+        -> If 'payment_type == "card"', the validation runs (card number is required).
+        -> Otherwise, the validation does not run.
+
+
+    ## 5.2 Using a Proc with :if and :unless
+
+        -> Instead of defining a method, you can write the condition inline using a 'Proc'.
+
+        ```
+        class Account < ApplicationRecord
+            validates :password, confirmation: true,
+            unless: Proc.new { |a| a.password.blank? }
+        end
+        ```
+
+        -> If 'password' is blank, skip validation.
+        -> If 'password' is present, run the validation.
+
+        ```
+        validates :password, confirmation: true, unless: -> { password.blank? }
+        ```
+        -> 'Lambda' is just a shorter version of 'Proc.new', both work the same way.
+
+    
+
+    ## 5.3 Grouping Conditional Validations
+
+        -> Sometimes, you want multiple validations to apply under the same condition. 
+        -> Instead of repeating 'if: :condition_name' for each validation, you can group them 
+           using 'with_options'.
+        
+        ```
+        class User < ApplicationRecord
+            with_options if: :is_admin? do |admin|
+                admin.validates :password, length: { minimum: 10 }
+                admin.validates :email, presence: true
+            end
+        end
+        ```
+
+        -> If 'is_admin? == true', both validations apply.
+        -> If 'is_admin? == false', neither validation applies.
+
+    
+    ## 5.4 Combining Validation Conditions
+
+        -> we can combine multiple conditions using an Array and even use if and unless together.
+
+        ```
+        class Computer < ApplicationRecord
+        validates :mouse, presence: true,
+                            if: [Proc.new { |c| c.market.retail? }, :desktop?],
+                            unless: Proc.new { |c| c.trackpad.present? }
+        end
+        ```
+
+        -> Validation runs only if:
+            -> 'market.retail?' returns 'true', AND
+            -> 'desktop?' returns 'true', AND
+            -> 'trackpad' is not present
+
+        
