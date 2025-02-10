@@ -791,4 +791,22 @@
         -> If a validation has multiple contexts ([:update, :ensure_title]), it will run if either
            context is triggered.
         
-        
+
+
+## 4 Strict Validations
+
+    -> By default, Rails validations do not raise exceptions when they fail. Instead, they add
+       errors to the model’s 'errors' collection. 
+    -> If we want validations to immediately raise an exception when they fail, we can use the 
+       'strict: true' option.
+    
+    ```
+    class Person < ApplicationRecord
+        validates :name, presence: { strict: true }
+    end
+    ```
+
+    -> It stops execution immediately if the validation fails.
+    -> Useful when you want to ensure critical data is always present.
+
+

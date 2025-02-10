@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_10_045848) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_10_052930) do
   create_table "accounts", force: :cascade do |t|
     t.string "subdomain"
     t.datetime "created_at", null: false
@@ -118,6 +118,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_045848) do
     t.integer "age"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "token"
   end
 
   create_table "players", force: :cascade do |t|
