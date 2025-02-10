@@ -1,4 +1,4 @@
-class TokenGenerationException < StandardError;
+class TokenGenerationException < StandardError
 end
 class Persontwo < ApplicationRecord
     validate do |person|
