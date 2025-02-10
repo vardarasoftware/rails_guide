@@ -1261,4 +1261,54 @@
 
 
 
+## 8 Displaying Validation Errors in Views
+
+    -> When a Rails model has validations, you often need to display error messages when 
+       validation fails—especially in web forms.
+    -> we can manually display error messages using Rails' errors collection.
+    -> When a model fails validation, its 'errors' collection contains all the error messages. 
+    -> we can use '@article.errors.any?' to check if there are any errors before displaying them.
+
+    ```
+    <% if @article.errors.any? %>
+    <div id="error_explanation">
+        <h2><%= pluralize(@article.errors.count, "error") %> prohibited this article from being saved:</h2>
+
+        <ul>
+        <% @article.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+        <% end %>
+        </ul>
+    </div>
+    <% end %>
+    ```
+
+    -> '@article.errors.any?' → Checks if there are any validation errors.
+    -> 'pluralize(@article.errors.count, "error")' → Displays the number of errors.
+    -> '@article.errors.each do |error|' → Loops through all errors.
+    -> 'error.full_message' → Displays the full error message for each error.
+
+    ```
+    <div class="field_with_errors">
+        <input id="article_title" name="article[title]" size="30" type="text" value="">
+    </div>
+    ```
+
+    -> This '<div class="field_with_errors">' is automatically generated when validation fails.
+    -> we can style it using CSS to visually indicate errors.
+
+
+    ```
+    .field_with_errors {
+        padding: 2px;
+        background-color: red;
+        display: table;
+    }
+    ```
+    -> This will highlight invalid fields with a red background.
+    -> we can customize this styling to match your application's design.
+    
+
+
+
 
