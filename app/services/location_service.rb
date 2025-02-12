@@ -3,4 +3,3 @@ class LocationService
       "Default Location"
     end
 end
-  

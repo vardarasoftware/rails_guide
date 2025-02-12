@@ -1,5 +1,5 @@
 class Comment < ApplicationRecord
-    before_save :filter_content, if: [:subject_to_parental_control?, :untrusted_author?]
+    before_save :filter_content, if: [ :subject_to_parental_control?, :untrusted_author? ]
 
     private
 

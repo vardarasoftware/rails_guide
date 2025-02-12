@@ -5,4 +5,3 @@ class FileDestroyerCallback
       end
     end
 end
-  

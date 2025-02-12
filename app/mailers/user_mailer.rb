@@ -8,4 +8,3 @@ class UserMailer < ApplicationMailer
       mail(to: @user.email, subject: 'Confirm Your Email')
     end
 end
-  

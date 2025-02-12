@@ -1,5 +1,5 @@
 class Author < ApplicationRecord
-    has_many :books, before_add: [:check_limit, :calculate_shipping_charges]
+    has_many :books, before_add: [ :check_limit, :calculate_shipping_charges ]
 
   def check_limit(_book)
     if books.count >= 5
