@@ -1031,12 +1031,207 @@
 
 
 
+# 3 Choosing an Association */*/*/*/*
 
+    ## 3.1 belongs_to vs has_one
+
+        -> In Rails, when setting up a one-to-one relationship between two models, you need to decide
+           between belongs_to and has_one. 
+        -> The key difference lies in where the foreign key is stored and the direction of ownership.
+
+        -> belongs_to → The model containing the foreign key.
+        -> has_one → The model that owns the other model.
+
+        ```
+        class Supplier < ApplicationRecord
+            has_one :account
+        end
+
+        class Account < ApplicationRecord
+            belongs_to :supplier
+        end
+        ```
+
+        -> The 'accounts' table will store a 'supplier_id' column as a foreign key.
+        -> 'Supplier' will have one 'Account', while 'Account' will belong to a 'Supplier'.
         
 
+        ```
+        class CreateSuppliers < ActiveRecord::Migration[8.0]
+            def change
+                create_table :suppliers do |t|
+                    t.string :name
+                    t.timestamps
+                end
+
+                create_table :accounts do |t|
+                    t.belongs_to :supplier_id
+                    t.string :account_number
+                    t.timestamps
+                end
+
+                add_index :accounts, :supplier_id
+            end
+        end
+        ```
+
+        -> The suppliers table contains supplier details.
+        -> The accounts table contains: supplier_id, account_number
+        -> The foreign key (supplier_id) is placed in the accounts table because account belongs
+           to Supplier.
+        -> belongs_to indicates that this model stores the foreign key.
+
+
+    ## 3.2 has_many :through vs has_and_belongs_to_many
+
+        -> In Rails, you can establish a many-to-many relationship between models in two ways:
+        -> has_many :through
+        -> has_and_belongs_to_many 
+
+
+        ```
+        class Assembly < ApplicationRecord
+            has_many :manifests
+            has_many :parts, through: :manifests
+        end
+
+        class Manifest < ApplicationRecord
+            belongs_to :assembly
+            belongs_to :part
+        end
+
+        class Part < ApplicationRecord
+            has_many :manifests
+            has_many :assemblies, through: :manifests
+        end
+        ```
+
+        -> An Assembly is made of Parts.
+        -> The Manifest is the join model that connects them and can store additional details.
+        
+
+        ```
+        class Assembly < ApplicationRecord
+            has_and_belongs_to_many :parts
+        end
+
+        class Part < ApplicationRecord
+            has_and_belongs_to_many :assemblies
+        end
+        ```
+
+        -> This join table does not have a primary key and cannot store extra attributes.
 
 
 
+# 4 Advanced Associations */*/*/*/*
+
+    ## 4.1 Polymorphic Associations
+
+        -> Polymorphic associations allow a model to belong to multiple other models using a
+           single association. 
+        -> This is useful when different models share a common relationship with another model.
+
+
+        ```
+        class Picture < ApplicationRecord
+            belongs_to :imageable, polymorphic: true
+        end
+
+        class Employee < ApplicationRecord
+            has_many :pictures, as: :imageable
+        end
+
+        class Product < ApplicationRecord
+            has_many :pictures, as: :imageable
+        end
+        ```
+
+        -> The Picture model belongs to an imageable entity.
+        -> The Employee and Product models have many pictures through the imageable association.
+
+
+        -> To set this up in the database, we need:
+            -> imageable_id → Stores the ID of the related model (Employee or Product).
+            -> imageable_type → Stores the model name ("Employee" or "Product").
+        
+        ```
+        class CreatePictures < ActiveRecord::Migration[8.0]
+            def change
+                create_table :pictures do |t|
+                    t.string :name
+                    t.belongs_to :imageable, polymorphic: true
+                    t.timestamps
+                end
+            end
+        end
+        ```
+
+        -> A single table handles pictures for multiple models.
+        -> No need for separate foreign keys like 'employee_id' and 'product_id'.
+
+
+    
+    ## 4.2 Models with Composite Primary Keys
+
+        -> Rails automatically infers primary key-foreign key relationships when dealing with
+           associations. 
+        -> However, when a table has a composite primary key, Rails defaults to using only one
+           column.
+        -> To correctly handle composite primary keys in associations, we must explicitly define
+           them in your models.
+        -> A composite primary key is when two or more columns together uniquely identify a
+           record.
+        -> Rails assumes that every table has a single id column as the primary key. 
+        -> When working with composite primary keys, it will likely default to using only id in 
+           associations unless explicitly specified.
+        
+
+    
+    ## 4.3 Self Joins
+
+        -> A self-join is a technique where a table is joined with itself to establish a
+           hierarchical relationship between records. 
+        -> This is useful when a model needs to reference another record of the same model.
+
+        ```
+        class Employee < ApplicationRecord
+            # an employee can have many subordinates.
+            has_many :subordinates, class_name: "Employee", foreign_key: "manager_id"
+
+            # an employee can have one manager.
+            belongs_to :manager, class_name: "Employee", optional: true
+        end
+        ```
+
+        -> 'has_many :subordinates' this means one employee can have multiple subordinates.
+        -> We explicitly set 'class_name: "Employee"' to tell Rails that the associated model is
+           the same table.
+        -> The foreign key 'manager_id' in the employees table is used to identify the manager.
+        -> 'belongs_to :manager' this means an employee can have one manager.
+        -> 'class_name: "Employee"' tells Rails to look for the manager in the same table.
+        -> 'optional: true' allows top-level managers to exist without having a manager.
+
+
+
+        ```
+        class CreateEmployees < ActiveRecord::Migration[8.0]
+            def change
+                create_table :employees do |t|
+                # Add a belongs_to reference to the manager, which is an employee.
+                    t.belongs_to :manager, foreign_key: { to_table: :employees }
+                    t.timestamps
+                end
+            end
+        end
+        ```
+
+        -> t.belongs_to :manager, foreign_key: { to_table: :employees } = this adds a 
+           'manager_id' column to the employees table.
+        -> The foreign_key: { to_table: :employees } ensures that manager_id references another
+           employee.
+        
+        
 
 
 

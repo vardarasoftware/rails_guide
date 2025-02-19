@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_12_105716) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_19_073023) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -142,6 +142,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_12_105716) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "employees", force: :cascade do |t|
+    t.string "name"
+    t.integer "manager_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["manager_id"], name: "index_employees_on_manager_id"
+  end
+
   create_table "holidays", force: :cascade do |t|
     t.string "name"
     t.date "holiday_date"
@@ -256,6 +264,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_12_105716) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "pictures", force: :cascade do |t|
+    t.string "name"
+    t.string "imageable_type", null: false
+    t.integer "imageable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["imageable_type", "imageable_id"], name: "index_pictures_on_imageable"
+  end
+
   create_table "players", force: :cascade do |t|
     t.decimal "points"
     t.integer "games_played"
@@ -270,6 +287,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_12_105716) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_posts_on_user_id"
+  end
+
+  create_table "product_twos", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "products", primary_key: ["customer_id", "product_sku"], force: :cascade do |t|
@@ -355,6 +378,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_12_105716) do
   add_foreign_key "assemblies_parts", "assemblies"
   add_foreign_key "assemblies_parts", "parts"
   add_foreign_key "book_twos", "authortwos"
+  add_foreign_key "employees", "employees", column: "manager_id"
   add_foreign_key "line_items", "orders"
   add_foreign_key "notifications", "usertwos"
   add_foreign_key "paragraphs", "sections"
