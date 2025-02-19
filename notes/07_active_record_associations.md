@@ -1231,15 +1231,272 @@
         -> The foreign_key: { to_table: :employees } ensures that manager_id references another
            employee.
         
+
+
+# 5 Single Table Inheritance (STI) */*/*/*/*
+
+    -> STI is a design pattern in Rails that allows multiple models to share a single database
+       table while behaving as different classes.
+    -> This is useful when different entities share common attributes and behavior, but also have
+       some unique behaviors.
+    
+    ## 5.1 Generating the Base Vehicle Model
+
+        ```
+        bin/rails generate model vehicle type:string color:string price:decimal{10.2}
+        ```
+
+        -> type is a special column used by Rails to store the subclass name (e.g., Car,
+           Motorcycle, etc.).
+        -> Rails automatically maps subclasses to the parent table using the type column.
+    
+    
+    ## 5.2 Generating Child Models
+
+        ```
+        bin/rails generate model car --parent=Vehicle
+        ```
+
+        -> This generates:-
+
+        ```
+        class Car < Vehicle
+        end
+        ```
+
+    
+    ## 5.3 Creating Records
+
+        ```
+        Car.create(color: "Red", price: 10000)
+        ```
+
+        -> Since all models share the vehicles table, Rails automatically sets the type column.
+        -> This will generate the SQL:-
+
+        ```
+        INSERT INTO "vehicles" ("type", "color", "price") VALUES ('Car', 'Red', 10000)
+        ```
+
+
+    ## 5.4 Querying Records
         
+        ```
+        Car.all
+        ```
+        -> Rails ensures that queries return only relevant records.
+        -> This will generate the SQL:-
+
+        ```
+        SELECT "vehicles".* FROM "vehicles" WHERE "vehicles"."type" IN ('Car')
+        ```
+
+
+    ## 5.5 Adding Specific Behavior
+
+        -> Each subclass can define its own methods.
+        ```
+        class Car < Vehicle
+            def honk
+                "Beep Beep"
+            end
+        end
+        ```
+        
+        -> Now, we can do:
+        ```
+        car = Car.first
+        car.honk  # => "Beep Beep"
+        ```
+
+    
+    ## 5.6 Controllers
+
+        ```
+        class CarsController < ApplicationController
+            def index
+                @cars = Car.all
+            end
+        end
+        ```
+
+        -> Each subclass can have its own controller.
+
+
+    ## 5.7 Overriding the inheritance column
+
+        -> By default, Rails uses the type column for STI.
+        -> If we're working with a legacy database where the column name is different, 
+           we can override it.
+        
+        ```
+        class Vehicle < ApplicationRecord
+            self.inheritance_column = "kind"
+        end
+        ```
+
+    
+    ## 5.8 Disabling the inheritance column
+
+        -> If we don't want Rails to use STI, we can disable it.
+
+        ```
+        class Vehicle < ApplicationRecord
+            self.inheritance_column = nil
+        end
+        ```
+
+    
+    ## 5.9 Considerations
+
+        -> Less duplication – Only one table instead of multiple.
+        -> Easier queries – Querying Vehicle.all fetches all types.
+        -> Code reusability – Shared logic in Vehicle for all subclasses.
+
+        -> Table bloat – The table will have unused columns for some subclasses.
+        -> Data integrity issues – Need to ensure subclass-specific fields are correctly handled.
+        -> Hard to scale – If subclasses grow with unique attributes, STI becomes inefficient.
 
 
 
+# 6 Delegated Types */*/*/*/*
+
+    -> Delegated Types is an alternative to Single Table Inheritance (STI) that prevents table
+       bloat. 
+    -> Instead of storing all attributes in a single table, Delegated Types splits common and
+       unique attributes into separate tables.
+    -> If a vehicles table has Car, Motorcycle, and Bicycle, it must store all possible
+       attributes for every type, leading to unused columns in many records.
+    -> Delegated Types solves this by keeping shared attributes in a common table and moving 
+       specific attributes to individual tables.
+    
+
+    ## 6.1 Setting up Delegated Types
+
+        -> Instead of using STI, Delegated Types uses a shared table (entries) to track different
+           models and delegates behavior to subclass-specific tables.
+        -> Create a base model (Entry) to store shared attributes.
+        -> Create separate models (Message, Comment) to store subclass-specific attributes.
+        -> Use delegated_type to link the Entry model with the subclasses.
+
+    
+    ## 6.2 Generating Models
+
+        ```
+        bin/rails generate model entry entryable_type:string entryable_id:integer
+        ```
+        -> entryable_type stores the model name (e.g., "Message", "Comment").
+        -> entryable_id stores the ID of the related record.
+
+        -> Then, we will generate new Message and Comment models for delegation:
+        ``` 
+        bin/rails generate model message subject:string body:string
+        bin/rails generate model comment content:string
+        ```
+
+        -> After running the generators, our models should look like this:
+
+        ```
+        # Schema: entries[ id, entryable_type, entryable_id, created_at, updated_at ]
+        class Entry < ApplicationRecord
+        end
+
+        # Schema: messages[ id, subject, body, created_at, updated_at ]
+        class Message < ApplicationRecord
+        end
+
+        # Schema: comments[ id, content, created_at, updated_at ]
+        class Comment < ApplicationRecord
+        end
+        ```
 
 
+    ## 6.3 Declaring delegated_type
+
+        -> We define delegated_type in the Entry model
+        ```
+        class Entry < ApplicationRecord
+            delegated_type :entryable, types: %w[ Message Comment ], dependent: :destroy
+        end
+        ```
+
+        -> The entryable field refers to either Message or Comment.
+        -> 'dependent: :destroy' ensures that if an Entry is deleted, the associated record is 
+           also deleted.
+
+    
+    ## 6.4 Defining the Entryable Module
+
+        -> Since Message and Comment belong to Entry, we create a module to handle this 
+           association.
+        ```
+        module Entryable
+            extend ActiveSupport::Concern
+
+            included do
+                has_one :entry, as: :entryable, touch: true
+            end
+        end
+        ```
+
+        -> has_one :entry, as: :entryable links the subclass (Message, Comment) to Entry.
+        -> touch: true updates Entry's timestamp whenever Message or Comment changes.
 
 
+        -> Now, include this module in Message and Comment
 
+        ```
+        class Message < ApplicationRecord
+            include Entryable
+        end
+
+        class Comment < ApplicationRecord
+            include Entryable
+        end
+        ```
+
+    
+
+    ## 6.5 Object creation
+
+        ```
+        Entry.create!(entryable: Message.new(subject: "hello!"))
+        ```
+        -> A Message with subject: "hello!".
+        -> An Entry linked to that Message.
+
+
+    
+    ## 6.6 Adding further delegation
+
+
+        -> We can delegate methods from Entry to Message and Comment.
+        -> Message#title → subject
+        -> Comment#title → a truncated version of content.
+
+
+        ```
+        class Entry < ApplicationRecord
+            delegated_type :entryable, types: %w[ Message Comment ]
+            delegate :title, to: :entryable
+        end
+
+        class Message < ApplicationRecord
+            include Entryable
+
+            def title
+                subject
+            end
+        end
+
+        class Comment < ApplicationRecord
+            include Entryable
+
+            def title
+                content.truncate(20)
+            end
+        end
+        ```
 
 
 
