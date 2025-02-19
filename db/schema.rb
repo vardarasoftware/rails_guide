@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_10_081341) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_12_050219) do
   create_table "accounts", force: :cascade do |t|
     t.string "subdomain"
     t.datetime "created_at", null: false
@@ -38,6 +38,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_081341) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "birthday_cakes", force: :cascade do |t|
+    t.string "name"
+    t.string "flavor"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "book_orders", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -58,6 +65,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_081341) do
 
   create_table "coffees", force: :cascade do |t|
     t.string "size"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "comments", force: :cascade do |t|
+    t.text "content"
+    t.string "author"
+    t.integer "post_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -120,6 +135,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_081341) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "notifications", force: :cascade do |t|
+    t.string "event"
+    t.integer "usertwo_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["usertwo_id"], name: "index_notifications_on_usertwo_id"
+  end
+
   create_table "orders", force: :cascade do |t|
     t.decimal "total"
     t.datetime "created_at", null: false
@@ -148,6 +171,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_081341) do
     t.string "token"
   end
 
+  create_table "picture_files", force: :cascade do |t|
+    t.string "filename"
+    t.string "filepath"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "players", force: :cascade do |t|
     t.decimal "points"
     t.integer "games_played"
@@ -172,7 +202,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_081341) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
-    t.string "price"
+    t.integer "price"
     t.string "category"
     t.string "legacy_code"
     t.index ["user_id"], name: "index_products_on_user_id"
@@ -220,13 +250,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_10_081341) do
     t.string "author"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "email", default: "", null: false
-    t.string "address"
-    t.boolean "is_admin"
-    t.string "password"
+  end
+
+  create_table "usertwos", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
+    t.string "location"
+    t.string "password_digest"
+    t.string "role"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   add_foreign_key "line_items", "orders"
+  add_foreign_key "notifications", "usertwos"
   add_foreign_key "posts", "users"
   add_foreign_key "products", "users"
 end
