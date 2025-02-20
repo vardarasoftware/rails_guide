@@ -3,4 +3,3 @@ module FindRecentExtension
       where("created_at > ?", 5.days.ago)
     end
 end
-  
