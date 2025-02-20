@@ -1,11 +1,7 @@
 class User < ApplicationRecord
-    after_create :log_new_user
-    private
-      def log_new_user
-        puts "A new user was registered"
-      end
-    with_options if: :is_admin? do |admin|
-      admin.validates :password, length: { minimum: 10 }
-      admin.validates :email, presence: true
-    end
+    self.primary_key = "guid"
+    has_and_belongs_to_many :friends,
+    class_name: "User",
+    foreign_key: "this_user_id",
+    association_foreign_key: "other_user_id"
 end

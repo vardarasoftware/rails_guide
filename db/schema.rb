@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_19_163411) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -24,6 +24,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_19_163411) do
     t.string "account_number"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active"
     t.index ["supplier_id"], name: "index_accounts_on_supplier_id", unique: true
   end
 
@@ -68,6 +69,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_19_163411) do
     t.integer "total_books"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "books_count", default: 0, null: false
   end
 
   create_table "authortwos", force: :cascade do |t|
@@ -93,6 +95,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_19_163411) do
     t.datetime "published_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "title"
     t.index ["authortwo_id"], name: "index_book_twos_on_authortwo_id"
   end
 
@@ -140,6 +143,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_19_163411) do
 
   create_table "distributors", force: :cascade do |t|
     t.string "zipcode"
+  end
+
+  create_table "doctors", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "documents", force: :cascade do |t|
@@ -246,6 +255,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_19_163411) do
   end
 
   create_table "patients", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "patrons", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -364,6 +379,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_19_163411) do
 
   create_table "suppliers", force: :cascade do |t|
     t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "active"
+  end
+
+  create_table "todos", force: :cascade do |t|
+    t.string "task"
+    t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

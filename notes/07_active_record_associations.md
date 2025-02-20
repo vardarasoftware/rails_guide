@@ -1853,26 +1853,597 @@
             -> Enables autosaving of parent objects
             -> Validates presence correctly
 
+
+
+# 8 Association References */*/*/*/*/*
+
+    ## 8.1 Options
+
+        -> Active Record provides various association options to customize how models relate to
+           each other. 
+        -> These options allow you to modify default behaviors such as defining foreign keys,
+           setting dependency rules, validating associations, and ensuring consistency in data relationships.
+
+        ```
+        class Book < ApplicationRecord
+            belongs_to :author, touch: :books_updated_at,
+                counter_cache: true
+        end
+        ```
+
+        ### 8.1.1 :class_name
+
+        -> Used when the associated model's name does not match the association name.
+        -> If a Book belongs to an Author, but the actual model is named Patron, 
+           we can specify it like this:
+        ```
+        class Book < ApplicationRecord
+            belongs_to :author, class_name: "Patron"
+        end
+        ```
+
+
+        ### 8.1.2 :dependent
+
+        -> Defines what happens to associated records when the parent record is destroyed.
+        
+        -> :destroy → Calls .destroy on associated records, triggering callbacks.
+        -> :delete → Directly deletes associated records from the database without callbacks.
+        -> :destroy_async → Asynchronously destroys associated records.
+        -> :nullify → Sets the foreign key to NULL instead of deleting the record.
+        -> :restrict_with_exception → Prevents deletion by raising an error if dependent records
+            exist.
+        -> :restrict_with_error → Adds an error message instead of deleting.
+
+        ```
+        class Author < ApplicationRecord
+            has_many :books, dependent: :destroy
+        end
+        ```
+        -> When an Author is deleted, all their books will also be deleted.
+
+
+        ### 8.1.3 :foreign_key
+
+        -> Specifies a custom foreign key column name if it doesn’t follow Rails' default
+           'association_name_id'
+        
+        ```
+        class Supplier < ApplicationRecord
+            has_one :account, foreign_key: "supp_id"
+        end
+        ```
+        -> Here, account references supp_id instead of the default supplier_id.
+
+
+
+        ### 8.1.4 :primary_key
+        
+        -> Specifies a custom primary key for associations instead of the default id.
+
+        ```
+        class User < ApplicationRecord
+            self.primary_key = "guid" # Sets the primary key to guid instead of id
+        end
+
+        class Todo < ApplicationRecord
+            belongs_to :user, primary_key: "guid" # References the guid column in users table
+        end
+        ```
+        -> Here, Todo references guid instead of id in User.
+
+
+
+        ### 8.1.5 :touch
+
+        -> Updates the updated_at timestamp of the associated object when the parent object is
+           saved or deleted.
+        
+        ```
+        class Book < ApplicationRecord
+            belongs_to :author, touch: true
+        end
+        ```
+        -> Whenever a Book is modified, its Author’s updated_at timestamp is updated.
+
+
+        ### 8.1.6 :validate
+
+        -> Ensures associated objects are validated before saving the parent object.
+        -> 'has_and_belongs_to_many' does not support the :validate option.
+
+
+        ### 8.1.7 :inverse_of
+
+        -> Establishes an explicit bi-directional association, ensuring that both models
+           recognize their connection.
+
+        ```
+        class Supplier < ApplicationRecord
+            has_one :account, inverse_of: :supplier
+        end
+
+        class Account < ApplicationRecord
+            belongs_to :supplier, inverse_of: :account
+        end
+        ```
+
+        -> This prevents redundant queries and ensures consistency in data relationships.
+
+        
+        ### 8.1.8 :source_type
+
+        -> Used in polymorphic 'has_many :through' associations to specify which type of model
+           should be fetched.
+        
+        ```
+        class Author < ApplicationRecord
+            has_many :books
+            has_many :paperbacks, through: :books, source: :format, source_type: "Paperback"
+        end
+
+        class Book < ApplicationRecord
+            belongs_to :format, polymorphic: true
+        end
+
+        class Hardback < ApplicationRecord; end
+        class Paperback < ApplicationRecord; end
+        ```
+        -> This ensures that author.paperbacks only fetches Book records where 
+           format_type = "Paperback".
+           
+
+
+        ### 8.1.9 :strict_loading
+
+        -> Enforces strict loading so that all associated records must be explicitly preloaded or
+           eager-loaded.
+
+
+
+        ### 8.1.10 :association_foreign_key
+
+        -> Used in 'has_and_belongs_to_many' relationships to specify the foreign key column name
+           for the associated model.
+
+        ```
+        class User < ApplicationRecord
+            has_and_belongs_to_many :friends,
+                class_name: "User",
+                foreign_key: "this_user_id",
+                association_foreign_key: "other_user_id"
+        end
+        ```
+
+        -> This defines a self-referential many-to-many relationship.
+
+
+
+        ### 8.1.11 :join_table
+        
+        -> Specifies a custom join table name in has_and_belongs_to_many relationships.
+        -> the default name of the join table, based on lexical ordering
+        -> If we want to change the table name then simply we can use the ':join_table' option to
+           override the default.
+        
+        
+    ## 8.2 Scopes
+
+        -> Scope allow us to specify the common queries that can be referenced as method calls on
+           the association  object.
+        -> This is usefull for difining the custom queries that are reused in multiple place in
+           our application
+        -> It help keep your code clean, DRY, and efficient by avoiding repetitive query logic.
+
+        ```
+        class Parts < ApplicationRecord
+            has_and_belongs_to_many :assemblies, -> { where active: true }
+        end
+        ```
+
+
+        ### 8.2.1 General Scopes
+
+        -> Scopes are commonly used in ActiveRecord associations like 'has_many', 'belongs_to', 
+           and 'has_and_belongs_to_many' to filter or modify associated records.
+
+
+            ### 8.2.1.1 where
+
+            -> The where method lets you specify conditions for associated objects.
+            ```
+            class Parts < ApplicationRecord
+                has_and_belongs_to_many :assemblies,
+                    -> { where "factory = 'Seattle'" }
+            end
+            ```
+
+            -> This ensures that only assemblies from the Seattle factory are associated with Parts.
+
+            ```
+            class Parts < ApplicationRecord
+                has_and_belongs_to_many :assemblies,
+                    -> { where factory: "Seattle" }
+            end
+            ```
+            -> This does the same as the previous example but in a more Rails-friendly way.
+
+
+            ### 8.2.1.2 includes
+
+            -> The includes method is used to preload associated records, reducing the number of
+               database queries.
+            
+            ```
+            class Supplier < ApplicationRecord
+                has_one :account, -> { includes :representative }
+            end
+
+            class Account < ApplicationRecord
+                belongs_to :supplier
+                belongs_to :representative
+            end
+
+            class Representative < ApplicationRecord
+                has_many :accounts
+            end
+            ```
+
+            -> Rails loads both account and representative in one query, improving performance.
+            -> Use includes to avoid unnecessary database queries!
+
+
+            ### 8.2.1.3 readonly
+
+            -> The readonly scope ensures that an associated record cannot be modified through 
+               the association.
+
+            ```
+            class Book < ApplicationRecord
+                belongs_to :author, -> { readonly }
+            end
+            ```
+
+            -> Now, if we try to modify an author via a book this is useful for preventing 
+               accidental modifications.
+
+
+            ### 8.2.1.4 select
+
+            -> By default, Rails fetches all columns when retrieving associated records. 
+            -> The select method lets you fetch only specific columns.
+
+            ```
+            class Author < ApplicationRecord
+                has_many :books, -> { select(:id, :title) }
+            end
+            ```
+
+            -> If you use select in belongs_to, also set foreign_key
+
+            ```
+            class Book < ApplicationRecord
+                belongs_to :author, -> { select(:id, :name) }, foreign_key: "author_id"
+            end
+            ```
+
+            -> This ensures Rails correctly associates the author_id.
+
+
+
+        ### 8.2.2 Collection Scopes
+
+            -> When using has_many or has_and_belongs_to_many, you can apply additional query
+               methods to customize the associated records. 
+            -> These include group, limit, order, select, and distinct.
+
+
+            #### 8.2.2.1 group
+
+            -> The group method groups the result set by a specific attribute using SQL's GROUP 
+               BY clause.
+            
+            ```
+            class Parts < ApplicationRecord
+                has_and_belongs_to_many :assemblies, -> { group "factory" }
+            end
+            ```
+
+            -> This will return results grouped by the factory column, meaning assemblies from
+               the same factory will be grouped together.
+            
+
+            #### 8.2.2.2 limit
+
+            -> The limit method restricts the number of records returned.
+
+            ```
+            class Parts < ApplicationRecord
+                has_and_belongs_to_many :assemblies,
+                    -> { order("created_at DESC").limit(50) }
+            end
+            ```
+            -> It will return only the most recent 50 assemblies.
+
+
+
+            #### 8.2.2.3 order
+
+            -> The order method determines the order in which records are retrieved.
+
+            ```
+            class Author < ApplicationRecord
+                has_many :books, -> { order "date_confirmed DESC" }
+            end
+            ```
+            -> Books will be sorted from newest to oldest by date_confirmed.
+
+
+
+            #### 8.2.2.4 select
+
+            -> By default, Rails retrieves all columns. 
+            -> The select method allows you to fetch only specific columns.
+
+            -> When using select, must include the primary and foreign keys to avoid errors.
+
+
+            #### 8.2.2.5 distinct
+
+            -> The distinct method removes duplicate records from an association.
+            
+            ```
+            class Person < ApplicationRecord
+                has_many :readings
+                has_many :articles, through: :readings
+            end
+            ```
+
+            ```
+            irb> person = Person.create(name: 'John')
+            irb> article = Article.create(name: 'a1')
+            irb> person.articles << article
+            irb> person.articles << article
+            irb> person.articles.to_a
+            => [#<Article id: 5, name: "a1">, #<Article id: 5, name: "a1">]
+            irb> Reading.all.to_a
+            => [#<Reading id: 12, person_id: 5, article_id: 5>, #<Reading id: 13, person_id: 5, article_id: 5>]
+            ```
+
+            -> It returns duplicate records because two readings exist in the readings table.
+
+            
+            ```
+            class Person
+                has_many :readings
+                has_many :articles, -> { distinct }, through: :readings
+            end
+            ```
+            
+
+            ```
+            irb> person = Person.create(name: 'Honda')
+            irb> article = Article.create(name: 'a1')
+            irb> person.articles << article
+            irb> person.articles << article
+            irb> person.articles.to_a
+            => [#<Article id: 7, name: "a1">]
+            irb> Reading.all.to_a
+            => [#<Reading id: 16, person_id: 7, article_id: 7>, #<Reading id: 17, person_id: 7, article_id: 7>]
+            ```
+
+            -> Even though two readings exist, only one unique article is shown.
+
+            -> Even though distinct removes duplicates when querying, the duplicates still exist
+               in the database. 
+            -> To prevent this, we should add a unique index.
+
+            ``` 
+            add_index :readings, [:person_id, :article_id], unique: true 
+            ```
+
+            -> This ensures that the same article cannot be added twice for the same person.
+
+
+            ```
+            person.articles << article unless person.articles.include?(article)
+            ```
+
+            -> This does not work properly in a multi-user environment. 
+            -> If two users try to add the same article at the same time, a race condition could
+               occur, allowing duplicates.
+
         
 
 
+        ### 8.2.3 Using the Association Owner
+        
+            -> In Rails, you can pass the owner of the association as an argument to the scope
+               block. 
+            -> This allows you to customize the query based on the specific instance of the
+               associated model.
+            -> Using the association owner in the scope prevents preloading (includes) from
+               working.
+            
+
+            ```
+            class Supplier < ApplicationRecord
+                has_one :account, ->(supplier) { where active: supplier.active? }
+            end
+            ```
+
+            -> has_one :account → Each Supplier has one associated Account.
+            ->(supplier) { where active: supplier.active? } → The query filters accounts based on
+               whether the supplier itself is active.
+            
+
+        
+    
+    ## 8.3 Counter Cache
+
+        -> Counter caching in Rails optimizes counting associated records by storing the count in
+           a column instead of querying the database every time.
+        
+
+        ```
+        class Book < ApplicationRecord
+            belongs_to :author
+        end
+
+        class Author < ApplicationRecord
+            has_many :books
+        end
+        ```
+        -> Each time author.books.size is called, Rails queries the database.
+
+        -> To improve efficiency, add counter_cache: true in the belongs_to association
+
+        ```
+        class Book < ApplicationRecord
+            belongs_to :author, counter_cache: true
+        end
+
+        class Author < ApplicationRecord
+            has_many :books
+        end
+        ```
+        -> Now, Rails automatically maintains a column in authors to store the count of books.
 
 
+        ->  Adding the Counter Column:
+            Since the count is stored in the has_many model (Author), we must add a books_count column to authors
+        
+        ```
+        class AddBooksCountToAuthors < ActiveRecord::Migration[8.0]
+            def change
+                add_column :authors, :books_count, :integer, default: 0, null: false
+            end
+        end
+        ```
+        -> Now, Rails updates 'books_count' automatically when books are added or removed.
+
+        -> If we want a different column name instead of books_count, specify it explicitly
+
+        ```
+        class Book < ApplicationRecord
+            belongs_to :author, counter_cache: :count_of_books
+        end
+
+        class Author < ApplicationRecord
+            has_many :books
+        end
+        ```
 
 
+        -> Without Counter Cache: Rails queries the database every time.
+        -> With Counter Cache: Rails stores the count in the authors table, improving performance.
+        -> Migration Needed: Add books_count column manually.
+        -> For Large Tables: First backfill data, then enable the counter cache.
+        -> Fix Stale Data: Use reset_counters when needed.
 
 
+    
+    ## 8.4 Callbacks
+
+        -> Rails provides callbacks that allow you to execute custom logic at different points in
+           an object's lifecycle.
+        -> Association callbacks work similarly but apply to associated records rather than
+           individual objects.
+
+        -> These are four available association callbacks:
+            -> before_add
+            -> after_add
+            -> before_remove
+            -> after_remove
+        
+        ```
+        class Author < ApplicationRecord
+            has_many :books, before_add: :check_credit_limit
+
+            def check_credit_limit(book)
+                throw(:abort) if limit_reached?
+            end
+        end
+        ```
+
+        -> before_add: :check_credit_limit → This runs the check_credit_limit method before
+           adding a book.
+        -> check_credit_limit(book) → If the method limit_reached? returns true, it prevents 
+           adding the book.
+        
+    
+
+    ### 8.5 Extensions
+
+        -> Rails allows us to extend the functionality of association proxies. 
+        -> These are the objects that handle Active Record associations like has_many or 
+           belongs_to. 
+        -> By extending these proxy objects, we can add custom methods to your associations,
+           making your queries more powerful and reusable.
+
+        -> we can define custom methods inside a has_many association block.
+
+        ```
+        class Author < ApplicationRecord
+            has_many :books do
+                def find_by_book_prefix(book_number)
+                    find_by(category_id: book_number[0..2])
+                end
+            end
+        end
+        ```
+        -> The has_many :books association is extended with a custom method.
+        -> The find_by_book_prefix method searches for books based on a prefix from book_number.
+        -> The association now behaves like a regular Active Record relation but with extra query
+           logic.
+        
+        -> If we want to reuse the same custom methods across multiple models, define them inside
+           a module.
+
+        ```
+        module FindRecentExtension
+            def find_recent
+                where("created_at > ?", 5.days.ago)
+            end
+        end
+
+        class Author < ApplicationRecord
+            has_many :books, -> { extending FindRecentExtension }
+        end
+
+        class Supplier < ApplicationRecord
+            has_many :deliveries, -> { extending FindRecentExtension }
+        end
+        ```
+
+        -> The FindRecentExtension module defines a method find_recent, which fetches records
+           created in the last 5 days.
+        -> The -> { extending FindRecentExtension } adds the method to both: 'Author.books'
+           'Supplier.deliveries'
+        -> Now, calling 'author.books.find_recent' or 'supplier.deliveries.find_recent' will fetch
+           recent records.
 
 
+        -> Rails provides the 'proxy_association' object, which helps interact with the
+           association's metadata.
+        
+        ```
+        module AdvancedExtension
+            def find_and_log(query)
+                results = where(query)
+                proxy_association.owner.logger.info("Querying #{proxy_association.reflection.name} with #{query}")
+                results
+            end
+        end
 
+        class Author < ApplicationRecord
+            has_many :books, -> { extending AdvancedExtension }
+        end
+        ```
 
+        -> find_and_log(query): Runs a database query and logs the search details.
+        -> proxy_association.owner.logger → Accesses the parent model's logger.
+        -> proxy_association.reflection.name → Fetches the association name.
 
-
-
-
-
-
-
-
-
+        
 
