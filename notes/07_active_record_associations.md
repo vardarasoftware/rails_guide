@@ -1500,6 +1500,377 @@
 
 
 
+# 7 Tips, Tricks, and Warnings */*/*/*/*/*
+
+
+    ## 7.1 Controlling Association Caching
+        -> Active Record automatically caches associated records once they are loaded to reduce
+           database queries and improve performance. 
+        -> However, it's essential to understand how caching works and when to reload data to 
+           prevent stale results.
+
+        ```
+        # retrieves books from the database
+        author.books.load
+
+        # uses the cached copy of books
+        author.books.size
+
+        # uses the cached copy of books
+        author.books.empty?
+        ```
+
+        -> The first call author.books.load executes an SQL query to fetch all books for the
+           author.
+        -> Any subsequent calls like author.books.size or author.books.empty? reuse the cached
+           data instead of hitting the database again.
+
+    
+    ## 7.2 Avoiding Name Collisions
+
+        -> In Rails, when defining associations, we must avoid using names that clash with 
+           existing ActiveRecord methods.
+
+        -> ActiveRecord provides many built-in methods, such as:
+            -> .attributes → Returns a hash of model attributes.
+            -> .connection → Manages the database connection.
+        -> If you name an association with one of these reserved words, it can override the 
+           default method, leading to unexpected behavior.
+
+
+    ## 7.3 Updating the Schema
+        
+        -> Associations in Rails help define relationships between models, but they do not
+           automatically update the database schema. 
+        -> You must manually create and update your database structure to match these 
+           associations.
+
+
+        ## 7.3.1 Creating Foreign Keys for belongs_to Associations
+
+        -> If a model has a belongs_to relationship, the corresponding table needs a foreign key
+           to reference the associated model.
+        -> For example, if a Book belongs to an Author, we define it like this:
+
+        ```
+        class Book < ApplicationRecord
+            belongs_to :author
+        end
+        ```
+
+        -> Creating the Database Table with a Foreign Key
+
+        ```
+        class CreateBooks < ActiveRecord::Migration[8.0]
+            def change
+                create_table :books do |t|
+                    t.datetime   :published_at
+                    t.string     :book_number
+                    t.belongs_to :author
+                end
+            end
+        end
+        ```
+
+
+        ### 7.3.2 Creating Join Tables for has_and_belongs_to_many Associations
+        
+        -> If two models have a many-to-many relationship using 'has_and_belongs_to_many', Rails
+           requires a join table to store these relationships.
+
+        ```
+        class Assembly < ApplicationRecord
+            has_and_belongs_to_many :parts
+        end
+
+        class Part < ApplicationRecord
+            has_and_belongs_to_many :assemblies
+        end
+        ```
+
+        -> Here, an Assembly can have many Parts, and a Part can belong to many Assemblies.
+
+        -> Generating a Join Table
+        ```
+        bin/rails generate migration CreateAssembliesPartsJoinTable assemblies parts
+        ```
+
+        -> The migration should not have a primary key because it’s not a model
+
+        ```
+        class CreateAssembliesPartsJoinTable < ActiveRecord::Migration[8.0]
+            def change
+                create_table :assemblies_parts, id: false do |t|
+                    t.bigint :assembly_id
+                    t.bigint :part_id
+                end
+
+                add_index :assemblies_parts, :assembly_id
+                add_index :assemblies_parts, :part_id
+            end
+        end
+        ```
+
+        -> Instead of manually creating a join table, you can use Rails’ create_join_table method
+
+        ```
+        class CreateAssembliesPartsJoinTable < ActiveRecord::Migration[8.0]
+            def change
+                create_join_table :assemblies, :parts do |t|
+                    t.index :assembly_id
+                    t.index :part_id
+                end
+            end
+        end
+        ```
+
+
+
+        ### 7.3.3 Creating Join Tables for has_many :through Associations
+
+        -> Unlike 'has_and_belongs_to_many', a 'has_many :through' relationship uses a join model
+           that acts as a bridge between two models.
+        
+        ```
+        class CreateAppointments < ActiveRecord::Migration[8.0]
+            def change
+                create_table :appointments do |t|
+                    t.belongs_to :physician
+                    t.belongs_to :patient
+                    t.datetime :appointment_date
+                    t.timestamps
+                end
+            end
+        end
+        ```
+
+    
+    ## 7.4 Controlling Association Scope
+
+        -> When we define associations in Rails, they only look for related models within the
+           same module by default. 
+        -> This helps keep models organized while maintaining proper associations.
+        -> If models are inside the same module, Rails automatically understands the association.
+
+        ```
+        module MyApplication
+            module Business
+                class Supplier < ApplicationRecord
+                    has_one :account
+                end
+
+                class Account < ApplicationRecord
+                    belongs_to :supplier
+                end
+            end
+        end
+        ```
+
+        -> Even though the models are nested inside 'MyApplication::Business', Rails knows that
+           'has_one :account' in Supplier refers to Account within the same module.
+        
+        -> If models belong to different modules, Rails cannot automatically associate them.
+        
+        ```
+        module MyApplication
+            module Business
+                class Supplier < ApplicationRecord
+                    has_one :account
+                end
+            end
+
+            module Billing
+                class Account < ApplicationRecord
+                    belongs_to :supplier
+                end
+            end
+        end
+        ```
+        -> Since Supplier is in MyApplication::Business and Account is in MyApplication::Billing,
+           Rails does not know they are related.
+        
+
+        -> To make associations work across different modules, you must specify the full class name using class_name.
+
+        ```
+        module MyApplication
+            module Business
+                class Supplier < ApplicationRecord
+                    has_one :account,
+                        class_name: "MyApplication::Billing::Account"
+                end
+            end
+
+            module Billing
+                class Account < ApplicationRecord
+                    belongs_to :supplier,
+                        class_name: "MyApplication::Business::Supplier"
+                end
+            end
+        end
+        ```
+
+        -> In Supplier, has_one :account now explicitly points to 
+           "MyApplication::Billing::Account".
+        -> In Account, belongs_to :supplier explicitly points to 
+           "MyApplication::Business::Supplier".
+        
+        -> This ensures Rails can properly link the models, even though they are in different
+           modules.
+
+
+    
+    ## 7.5 Bi-directional Associations
+
+        -> In Rails, when two models are related through an association, Active Record
+           automatically tries to recognize that the association is bi-directional—meaning both models are aware of their relationship to each other.
+        
+        -> Why is Bi-Directional Association Important?
+            -> Prevents Extra Database Queries 
+            -> Prevents Inconsistent Data
+            -> Allows Automatic Saving of Associations
+            -> Ensures Validation Works as Expected
+
+        
+        -> Rails automatically detects the relationship if both models are properly linked:
+
+        ```
+        class Author < ApplicationRecord
+            has_many :books
+        end
+
+        class Book < ApplicationRecord
+            belongs_to :author
+        end
+        ```
+
+        Examples: 
+
+        ```
+        author = Author.first
+        book = author.books.first
+        author.name == book.author.name 
+
+        author.name = "Changed Name"
+        author.name == book.author.name 
+        ```
+
+        -> The 'book.author' and 'author' point to the same object, so changes reflect correctly.
+
+        ```
+        author = Author.new
+        book = author.books.new
+        book.save!
+        book.persisted?
+        author.persisted?
+        ```
+
+        -> The parent (author) is automatically saved when its child (book) is saved.
+
+        ```
+        book = Book.new
+        book.valid?
+        book.errors.full_messages
+        author = Author.new
+        book = author.books.new
+        book.valid?
+        ```
+
+        -> Rails correctly enforces that author must be present before saving book.
+
+        -> If we customize the association using ':foreign_key' or ':class_name', Rails will NOT
+           automatically recognize the relationship.
+        
+
+        ```
+        class Author < ApplicationRecord
+            has_many :books
+        end
+
+        class Book < ApplicationRecord
+            belongs_to :writer, class_name: "Author", foreign_key: "author_id"
+        end
+        ```
+
+        -> Extra Database Queries (N+1 problem)
+        ```
+        irb> author = Author.first
+        irb> author.books.any? do |book|
+        irb>   book.writer.equal?(author) # This executes an author query for every book
+        irb> end
+        => false
+        ```
+
+        -> Inconsistent Data
+        ```
+        irb> author = Author.first
+        irb> book = author.books.first
+        irb> author.name == book.writer.name
+        => true
+        irb> author.name = "Changed Name"
+        irb> author.name == book.writer.name
+        => false
+        ```
+
+        -> Fails to Autosave Parent Object
+        ```
+        irb> author = Author.first
+        irb> book = author.books.first
+        irb> author.name == book.writer.name
+        => true
+        irb> author.name = "Changed Name"
+        irb> author.name == book.writer.name
+        => false
+        ```
+
+        -> Validation Doesn't Work Correctly
+        ```
+        irb> author = Author.new
+        irb> book = author.books.new
+        irb> book.save!
+        irb> book.persisted?
+        => true
+        irb> author.persisted?
+        => false
+        ```
+
+        -> When using custom :foreign_key or :class_name, we must explicitly tell Rails about the
+           bi-directional association using inverse_of.
+
+        ```
+        class Author < ApplicationRecord
+            has_many :books, inverse_of: "writer"
+        end
+
+        class Book < ApplicationRecord
+            belongs_to :writer, class_name: "Author", foreign_key: "author_id"
+        end
+        ```
+
+        -> Benefits of 'inverse_of'
+            -> Prevents extra queries
+            -> Ensures consistent data
+            -> Enables autosaving of parent objects
+            -> Validates presence correctly
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
