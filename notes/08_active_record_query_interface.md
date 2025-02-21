@@ -1008,7 +1008,211 @@
 
     -> The total_price attribute is available for each grouped result.
 
+
+
+# 8 Overriding Conditions */*/*/*/*
+
+  ## 8.1 unscope -----
+
+    -> The .unscope method removes specific conditions like order, limit, or where from a query.
+
+    ```
+    Book.where("id > 100").limit(20).order("id desc").unscope(:order)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE id > 100 LIMIT 20;
+    ```
+    -> The ORDER BY id DESC is removed.
+
+
+    ```
+    Book.where(id: 10, out_of_print: false).unscope(where: :id)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT books.* FROM books WHERE out_of_print = 0;
+    ```
+    -> The WHERE id = 10 condition is removed.
+
+
+    ```
+    Book.order("id desc").merge(Book.unscope(:order))
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT books.* FROM books;
+    ```
+    -> The ordering is removed from the merged query.
+
+  
+
+  ## 8.2 only -----
+
+    -> The .only method keeps only the specified conditions and removes all others.
+
+    ```
+    Book.where("id > 10").limit(20).order("id desc").only(:order, :where)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE id > 10 ORDER BY id DESC;
+    ```
+    -> The LIMIT 20 is removed
+
+
+
+  ## 8.3 reselect ----
+
+    -> The .reselect method replaces the fields retrieved in a SELECT query.
+
+    ```
+    Book.select(:title, :isbn).reselect(:created_at)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT books.created_at FROM books;
+    ```
+    -> It replaces title, isbn with created_at.
+
+    -> Without reselect:
+
+    ```
+    Book.select(:title, :isbn).select(:created_at)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT books.title, books.isbn, books.created_at FROM books;
+    ```
+    -> SELECT fields are appended instead of replaced.
+
+  
+  ## 8.4 reorder -----
+
+    -> The .reorder method overrides the default order set in the model.
+
+    ```
+    class Author < ApplicationRecord
+      has_many :books, -> { order(year_published: :desc) }
+    end
+
+    Author.find(10).books
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE author_id = 10 ORDER BY year_published DESC;
+    ```
+    -> By default, books are sorted by year_published DESC.
+
+
+
+    -> Using reorder to Override
+    ```
+    Author.find(10).books.reorder("year_published ASC")
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE author_id = 10 ORDER BY year_published ASC;
+    ```
+    -> ORDER BY is overridden.
+
+
+  
+  ## 8.5 reverse_order -----
+
+    -> The .reverse_order method flips the existing order.
+
+    ```
+    Book.where("author_id > 10").order(:year_published).reverse_order
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE author_id > 10 ORDER BY year_published DESC;
+    ```
+    -> ASC changes to DESC.
+
+
+    -> If No Order Exists
+    ```
+    Book.where("author_id > 10").reverse_order
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE author_id > 10 ORDER BY books.id DESC;
+    ```
+
+    -> Defaults to reversing primary key order.
+
+
+  
+  ## 8.6 rewhere ----
+
+    -> The .rewhere method replaces an existing where condition.
+
+    ```
+    Book.where(out_of_print: true).rewhere(out_of_print: false)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE out_of_print = 0;
+    ```
+    -> out_of_print = 1 is replaced with out_of_print = 0.
+
+
+    -> Without rewhere
+    ```
+    Book.where(out_of_print: true).where(out_of_print: false)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books WHERE out_of_print = 1 AND out_of_print = 0;
+    ```
+    -> This would always return an empty result.
+
+  
+
+  ## 8.7 regroup ----
+
+    -> The .regroup method replaces an existing GROUP BY condition.
+
+    ```
+    Book.group(:author).regroup(:id)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books GROUP BY id;
+    ```
+    -> GROUP BY author is replaced with GROUP BY id.
+
+
+
+    -> Without regroup
+    ```
+    Book.group(:author).group(:id)
+    ```
     
+    -> Generated SQL:
+    ```
+    SELECT * FROM books GROUP BY author, id;
+    ```
+    -> Both author and id are grouped.
+
+    
+
+
 
 
 
