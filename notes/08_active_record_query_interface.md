@@ -1210,7 +1210,48 @@
     ```
     -> Both author and id are grouped.
 
-    
+
+
+# 9 Null Relation */*/*/*/*/*
+
+  -> The .none method in Active Record is used to return an empty chainable relation. 
+  -> This means:
+    -> It prevents queries from being executed.
+    -> It allows method chaining without breaking the application.
+    -> It is useful when you need to return an empty result set instead of nil.
+
+  ```
+  Book.none
+  ```
+  -> Returns an empty ActiveRecord Relation.
+
+
+
+  --> Using none in a Method
+
+  ```
+  # The highlighted_reviews method below is expected to always return a Relation.
+  Book.first.highlighted_reviews.average(:rating)
+  # => Returns average rating of a book
+
+  class Book
+    # Returns reviews if there are at least 5,
+    # else consider this as non-reviewed book
+    def highlighted_reviews
+      if reviews.count > 5
+        reviews
+      else
+        Review.none # Does not meet minimum threshold yet
+      end
+    end
+  end
+  ```
+
+  -> If a book has more than 5 reviews, return the associated reviews.
+  -> If a book has 5 or fewer reviews, return Review.none, which behaves like an empty collection.
+
+  
+
 
 
 
