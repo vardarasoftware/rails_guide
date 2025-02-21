@@ -1250,7 +1250,26 @@
   -> If a book has more than 5 reviews, return the associated reviews.
   -> If a book has 5 or fewer reviews, return Review.none, which behaves like an empty collection.
 
+
+
+# 10 Readonly Objects */*/*/*/*
+
+  -> The '.readonly' method in Active Record is used to prevent modifications to fetched records.
+  -> If you try to update a readonly record, Rails will raise an 'ActiveRecord::ReadOnlyRecord' 
+     exception.
   
+  ```
+  customer = Customer.readonly.first
+  customer.visits += 1
+  customer.save # Raises an ActiveRecord::ReadOnlyRecord
+  ```
+
+  -> .readonly ensures that the record cannot be modified.
+  -> When customer.visits += 1 is attempted, it updates the attribute in memory.
+  -> When calling .save, Rails prevents the update and raises an exception.
+
+
+
 
 
 
