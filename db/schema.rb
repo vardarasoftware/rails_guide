@@ -10,10 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_21_051621) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_account_histories_on_account_id"
+  end
+
+  create_table "accounts", force: :cascade do |t|
+    t.string "subdomain"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_account_histories_on_account_id"
@@ -58,6 +65,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
     t.index ["part_id"], name: "index_assemblies_parts_on_part_id"
   end
 
+  create_table "author_threes", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "authors", force: :cascade do |t|
     t.string "first_name"
     t.string "last_name"
@@ -90,6 +103,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "book_threes", force: :cascade do |t|
+    t.string "title"
+    t.integer "year_published"
+    t.decimal "price"
+    t.boolean "out_of_print"
+    t.integer "author_three_id", null: false
+    t.integer "supplier_two_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_three_id"], name: "index_book_threes_on_author_three_id"
+    t.index ["supplier_two_id"], name: "index_book_threes_on_supplier_two_id"
+  end
+
   create_table "book_twos", force: :cascade do |t|
     t.integer "authortwo_id", null: false
     t.datetime "published_at"
@@ -105,6 +131,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
     t.bigint "library_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "books_orders", force: :cascade do |t|
+    t.integer "book_three_id", null: false
+    t.integer "order_two_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_three_id"], name: "index_books_orders_on_book_three_id"
+    t.index ["order_two_id"], name: "index_books_orders_on_order_two_id"
   end
 
   create_table "categories_products", id: false, force: :cascade do |t|
@@ -137,6 +172,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
     t.string "mouse"
     t.string "trackpad"
     t.string "market"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "customers", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -230,6 +272,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["usertwo_id"], name: "index_notifications_on_usertwo_id"
+  end
+
+  create_table "order_twos", force: :cascade do |t|
+    t.integer "customer_id", null: false
+    t.integer "status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_order_twos_on_customer_id"
   end
 
   create_table "orders", force: :cascade do |t|
@@ -369,12 +419,29 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
     t.index ["publisher_type", "publisher_id"], name: "index_publications_on_publisher"
   end
 
+  create_table "reviews", force: :cascade do |t|
+    t.integer "customer_id", null: false
+    t.integer "book_three_id", null: false
+    t.integer "state"
+    t.text "content"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_three_id"], name: "index_reviews_on_book_three_id"
+    t.index ["customer_id"], name: "index_reviews_on_customer_id"
+  end
+
   create_table "sections", force: :cascade do |t|
     t.string "title"
     t.integer "document_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["document_id"], name: "index_sections_on_document_id"
+  end
+
+  create_table "supplier_twos", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "suppliers", force: :cascade do |t|
@@ -428,12 +495,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_20_082213) do
   add_foreign_key "appointments", "physicians"
   add_foreign_key "assemblies_parts", "assemblies"
   add_foreign_key "assemblies_parts", "parts"
+  add_foreign_key "book_threes", "author_threes"
+  add_foreign_key "book_threes", "supplier_twos"
   add_foreign_key "book_twos", "authortwos"
+  add_foreign_key "books_orders", "book_threes"
+  add_foreign_key "books_orders", "order_twos"
   add_foreign_key "employees", "employees", column: "manager_id"
   add_foreign_key "line_items", "orders"
   add_foreign_key "notifications", "usertwos"
+  add_foreign_key "order_twos", "customers"
   add_foreign_key "paragraphs", "sections"
   add_foreign_key "posts", "users"
   add_foreign_key "products", "users"
-  add_foreign_key "sections", "documents"
+  add_foreign_key "reviews", "book_threes"
+  add_foreign_key "reviews", "customers"
+  add_foreign_key "sections", "documents" 
 end
