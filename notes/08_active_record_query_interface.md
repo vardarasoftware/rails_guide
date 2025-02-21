@@ -869,6 +869,51 @@
 
     
 
+# 5 Selecting Specific Fields */*/*/*/*
+
+    -> By default, Model.find retrieves all columns from the database using SELECT *.
+    -> To fetch only specific columns, use the '.select' method.
+    -> Instead of fetching all fields, you can specify only the required fields.
+
+    ```
+    Book.select(:isbn, :out_of_print)
+    # OR
+    Book.select("isbn, out_of_print")
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT isbn, out_of_print FROM books;
+    ```
+
+    -> Saves memory and speeds up queries by fetching only required data.
+
+    ```
+    ActiveModel::MissingAttributeError: missing attribute 'out_of_print' for Book
+    ```
+
+    -> Always select all necessary fields before using them.
+
+    -> The .distinct method ensures unique records in the result set.
+    ```
+    Customer.select(:last_name).distinct
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT DISTINCT last_name FROM customers;
+    ```
+
+    -> Removes duplicate last_name values.
+
+    -> If you used .distinct but later want to include duplicates, use .distinct(false).
+
+    ```
+    query = Customer.select(:last_name).distinct
+    query.distinct(false) 
+    ```
+
+
 
 
 
