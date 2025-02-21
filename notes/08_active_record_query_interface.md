@@ -946,6 +946,69 @@
   ->  Skips the first 30 customers and returns the next 5.
   
 
+# 7 Grouping */*/*/*/*
+
+  -> Grouping is used to aggregate data based on a particular field, similar to GROUP BY in SQL.
+  -> The .group(:column_name) method groups results based on a field.
+
+  ```
+  Order.select("created_at").group("created_at")
+  ```
+  -> generated SQL:
+
+  ```
+  SELECT created_at FROM orders GROUP BY created_at;
+  ```
+  -> This returns one record per unique date on which orders exist.
+
+  
+  ## 7.1 Total of Grouped Items ----
+
+    -> To count how many records belong to each group, chain '.count' after '.group'.
+    ```
+    Order.group(:status).count
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT COUNT(*) AS count_all, status FROM orders GROUP BY status;
+    ```
+    -> This returns a hash with counts for each order status
+
+
+  ## 7.2 HAVING Conditions ----
+
+    -> The .having method filters grouped results, similar to SQL's HAVING clause.
+
+    ```
+    Order.select("created_at as ordered_date, sum(total) as total_price")
+     .group("created_at")
+     .having("sum(total) > ?", 200)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT created_at as ordered_date, sum(total) as total_price
+    FROM orders
+    GROUP BY created_at
+    HAVING sum(total) > 200;
+    ```
+
+    -> Returns only the days where total sales exceed $200.
+
+    -> Accessing Aggregated Values
+
+    ```
+    big_orders = Order.select("created_at, sum(total) as total_price")
+                  .group("created_at")
+                  .having("sum(total) > ?", 200)
+
+    big_orders[0].total_price  # Returns the total price for the first grouped date
+    ```
+
+    -> The total_price attribute is available for each grouped result.
+
+    
 
 
 
