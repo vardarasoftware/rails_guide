@@ -509,5 +509,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_21_051621) do
   add_foreign_key "products", "users"
   add_foreign_key "reviews", "book_threes"
   add_foreign_key "reviews", "customers"
-  add_foreign_key "sections", "documents" 
+  add_foreign_key "sections", "documents"
 end
