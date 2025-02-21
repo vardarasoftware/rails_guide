@@ -784,7 +784,102 @@
     -> This will only return customers who have an ID that appears in both lists.
     -> In this case, ID 2 is the only match, so only Customer with id: 2 will be returned.
 
+
+
+# 4 Ordering */*/*/*/*
+
+  -> The order method in Active Record helps sort query results based on one or more fields.
+
+  ```
+  Book.order(:created_at)
+  # OR
+  Book.order("created_at")
+  ```
+  -> Generated SQL:
+  ```
+  SELECT * FROM books ORDER BY created_at ASC;
+  ```
+  -> Default ordering is ascending (ASC) if not explicitly mentioned.
+
+
+  --> Specifying ASC or DESC
+
+    -> Order by created_at (Descending)
+    ```
+    Book.order(created_at: :desc)
+    # OR
+    Book.order("created_at DESC")
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM books ORDER BY created_at DESC;
+    ```
+    -> Newer records will appear first.
+
+
+    -> Order by created_at (Ascending)
+    ```
+    Book.order(created_at: :asc)
+    # OR
+    Book.order("created_at ASC")
+    ```
     
+    -> Generated SQL:
+    ```
+    SELECT * FROM books ORDER BY created_at ASC;
+    ```
+    -> Older records will appear first.
+
+
+
+  -> If .order is called multiple times, new orders are added to the existing ones.
+  
+  ```
+  Book.order("title ASC").order("created_at DESC")
+  ```
+  
+  -> Generated SQL:
+  ```
+  SELECT * FROM books ORDER BY title ASC, created_at DESC;
+  ```
+
+  -> This is the same as specifying both fields in one order call.
+
+
+
+  --> Ordering with Joined Tables
+
+    -> When using joins or includes, you can order by fields from related tables.
+    
+    ```
+    Book.includes(:author).order(books: { print_year: :desc }, authors: { name: :asc })
+    # OR
+    Book.includes(:author).order("books.print_year DESC", "authors.name ASC")
+    ```
+
+    -> Generated SQL:
+    
+    ```
+    SELECT * FROM books LEFT OUTER JOIN authors ON books.author_id = authors.id
+    ORDER BY books.print_year DESC, authors.name ASC;
+    ```
+
+    -> First sorts by book print_year (newest first), then by author name (A-Z).
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
