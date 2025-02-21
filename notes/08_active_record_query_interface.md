@@ -914,6 +914,37 @@
     ```
 
 
+# 6 Limit and Offset */*/*/*
+
+  -> When querying records, you might want to:
+    -> Limit the number of results.
+    -> Skip a specific number of records before fetching results.
+
+  -> The .limit(n) method retrieves a maximum of n records.
+
+  ```
+  Customer.limit(5)
+  ```
+
+  -> Generated SQL:
+  ```
+  SELECT * FROM customers LIMIT 5;
+  ```
+  -> Returns only the first 5 customers.
+
+
+  -> The .offset(n) method skips n records before returning results.
+
+  ```
+  The .offset(n) method skips n records before returning results.
+  ```
+
+  ->  Generated SQL:
+  ```
+  SELECT * FROM customers LIMIT 5 OFFSET 30;
+  ```
+  ->  Skips the first 30 customers and returns the next 5.
+  
 
 
 
