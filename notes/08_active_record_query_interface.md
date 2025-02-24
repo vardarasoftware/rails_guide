@@ -1271,6 +1271,332 @@
 
 
 
+# 11 Locking Records for Update */*/*/*/*
+
+  -> Locking is used to prevent race conditions when multiple processes try to update the same
+     record at the same time. 
+  -> Rails provides two types of locking mechanisms:
+    -> Optimistic Locking
+    -> Pessimistic Locking
+  
+
+  ## 11.1 Optimistic Locking -----
+
+    -> Best when conflicts are rare and performance is important.
+    -> Optimistic locking assumes that conflicts are rare and allows multiple users to access 
+       the same record for editing. 
+    -> It works by adding a lock_version column to the table, which keeps track of updates.
+
+    -> When a record is fetched from the database, it includes the 'lock_version' value.
+    -> If another process updates the record, it increments the 'lock_version'.
+    -> If we try to save the record with an old 'lock_version', it raises an 
+       'ActiveRecord::StaleObjectError', preventing data overwrites.
+
+    ```
+    c1 = Customer.find(1)
+    c2 = Customer.find(1)
+
+    c1.first_name = "Sandra"
+    c1.save
+
+    c2.first_name = "Michael"
+    c2.save # Raises an ActiveRecord::StaleObjectError
+    ```
+
+    -> Here, the second save fails because c1 already updated the record and changed lock_version.
+
+    -> We can change the column name: 
+    ```
+    class Customer < ApplicationRecord
+      self.locking_column = :lock_customer_column
+    end
+    ```
+
+  
+  ## 11.2 Pessimistic Locking -----
+
+    -> Best when conflicts are frequent, and data integrity is critical.
+    -> Pessimistic locking prevents conflicts before they happen by locking a record at the 
+       database level. 
+    -> Whwn a record is locked, no other process can modify it until the transaction is complete.
+
+    -> The lock method locks the record using SQL’s FOR UPDATE or LOCK IN SHARE MODE.
+    -> Other transactions must wait until the lock is released.
+    -> Usually used inside a transaction.
+
+    ```
+    Book.transaction do
+      book = Book.lock.first
+      book.title = "Algorithms, second edition"
+      book.save!
+    end
+    ```
+
+    -> Generated SQL:
+    ```
+    BEGIN;
+    SELECT * FROM books LIMIT 1 FOR UPDATE;
+    UPDATE books SET title = 'Algorithms, second edition' WHERE id = 1;
+    COMMIT;
+    ````
+
+    -> The FOR UPDATE lock ensures that no other process can update the row until the transaction
+       is committed.
+
+
+    ```
+    Book.transaction do
+      book = Book.lock("LOCK IN SHARE MODE").find(1)
+      book.increment!(:views)
+    end
+    ```
+    -> This allows other queries to read the record but prevents modifications.
+
+    -> If we already have an instance of a record, we can lock it using with_lock:
+    ```
+    book = Book.first
+    book.with_lock do
+      book.increment!(:views)
+    end
+    ```
+    -> This ensures that no other process modifies book while inside the block.
+
+
+
+# 12 Joining Tables */*/*/*/*/*
+
+  -> In Rails, joins is used to create SQL JOIN clauses when querying the database. 
+  -> It helps fetch related records efficiently by leveraging INNER JOIN or custom joins.
+  -> Active Record provides two methods for joining tables:
+  -> joins → Used for INNER JOIN.
+  -> left_outer_joins → Used for LEFT OUTER JOIN.
+
+  ## 12.1 joins -----
+
+    -> Returns records only when there is a match in the related table.
+    -> If a record does not have a matching row in the joined table, it will not be included in
+       the result.
+    
+
+    ### 12.1.1 Using a String SQL Fragment
+
+      -> we can manually define a JOIN condition using raw SQL:
+      ```
+      Author.joins("INNER JOIN books ON books.author_id = authors.id AND books.out_of_print = FALSE")
+      ```
+
+      -> This generated:
+      ```
+      SELECT authors.* 
+      FROM authors 
+      INNER JOIN books 
+      ON books.author_id = authors.id 
+      AND books.out_of_print = FALSE
+      ```
+      
+      -> If you need full control over the SQL query.
+      -> If the join condition is complex or involves multiple conditions.
+
+    
+    ### 12.1.2 Using Array/Hash of Named Associations 
+
+      -> Active Record lets you use associations defined in models to automatically create JOINs.
+
+      #### 12.1.2.1 Joining a Single Association
+
+      ```
+      Book.joins(:reviews)
+      ```
+      -> If Book has many reviews
+      -> Generated SQL:
+      ```
+      SELECT books.* 
+      FROM books 
+      INNER JOIN reviews ON reviews.book_id = books.id
+      ```
+
+      -> Returns only books that have reviews.
+      -> If a book has no reviews, it is not included in the result.
+
+
+    ### 12.1.3 Joining Multiple Associations
+
+      -> If a Book belongs to an Author and has many Reviews, we can join both tables:
+
+      ```
+      Book.joins(:author, :reviews)
+      ```
+      
+      -> Generated SQL:
+      ```
+      SELECT books.* FROM books
+      INNER JOIN authors ON authors.id = books.author_id
+      INNER JOIN reviews ON reviews.book_id = books.id
+      ```
+
+      -> Returns only books that have both an author and at least one review.
+      -> Books without an author or without a review will not be included.
+
+
+      ### 12.1.3.1 Joining Nested Associations (Single Level)
+
+      -> If a Review belongs to a Customer, and we want books that have been reviewed by a
+         customer:
+      ```
+      Book.joins(reviews: :customer)
+      ```
+
+      -> Generated SQL:
+      ```
+      SELECT books.* 
+      FROM books 
+      INNER JOIN reviews ON reviews.book_id = books.id
+      INNER JOIN customers ON customers.id = reviews.customer_id
+      ```
+
+      -> Returns only books that have reviews by a customer.
+      -> Books without reviews or books with reviews but no customer are excluded.
+
+      
+      #### 12.1.3.2 Joining Nested Associations (Multiple Level)
+
+      -> Example where an Author has Books, a Book has Reviews, a Review belongs to a Customer,
+         and a Customer has Orders:
+      ```
+      Author.joins(books: [{ reviews: { customer: :orders } }, :supplier])
+      ```
+
+      -> Generated SQL:
+      ```
+      SELECT authors.* 
+      FROM authors 
+      INNER JOIN books ON books.author_id = authors.id
+      INNER JOIN reviews ON reviews.book_id = books.id
+      INNER JOIN customers ON customers.id = reviews.customer_id
+      INNER JOIN orders ON orders.customer_id = customers.id
+      INNER JOIN suppliers ON suppliers.id = books.supplier_id
+      ```
+
+      -> Books with reviews by customers.
+      -> Customers who have placed orders.
+      -> Books that have a supplier.
+
+    
+    ### 12.1.4 Specifying Conditions on the Joined Tables
+
+      -> we can filter the joined table using .where.
+      -> Find customers who have orders created yesterday:
+      ```
+      time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+      Customer.joins(:orders).where("orders.created_at" => time_range).distinct
+      ```
+
+      -> Generated SQl:
+      ```
+      SELECT DISTINCT customers.* 
+      FROM customers 
+      INNER JOIN orders ON orders.customer_id = customers.id 
+      WHERE orders.created_at BETWEEN '2024-02-22 00:00:00' AND '2024-02-23 00:00:00'
+      ```
+
+      -> Instead of a string, you can use a hash for better readability:
+
+      ```
+      time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+      Customer.joins(:orders).where(orders: { created_at: time_range }).distinct
+      ```
+
+      -> This works the same way but is more readable and avoids SQL injection risks.
+
+      -> If we have a scope in the Order model
+
+      ```
+      class Order < ApplicationRecord
+        belongs_to :customer
+
+        scope :created_in_time_range, ->(time_range) {
+          where(created_at: time_range)
+        }
+      end
+      ```
+
+      -> we can reuse the scope inside '.joins'
+      ```
+      time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+      Customer.joins(:orders).merge(Order.created_in_time_range(time_range)).distinct
+      ```
+
+      -> It reuses logic from the model.
+      -> It keeps code clean and maintainable.
+
+  
+  ## 12.2 left_outer_joins ----
+
+    -> The left_outer_joins method ensures all primary table records are included, even if 
+       there are no matching records in the joined table.
+    
+    ```
+    Customer.left_outer_joins(:reviews).distinct.select("customers.*, COUNT(reviews.*) AS reviews_count").group("customers.id")
+    ```
+    
+    -> Generated SQL:
+    ```
+    SELECT DISTINCT customers.*, COUNT(reviews.id) AS reviews_count
+    FROM customers
+    LEFT OUTER JOIN reviews ON reviews.customer_id = customers.id
+    GROUP BY customers.id
+    ```
+    
+    -> This retrieves all customers, even those without reviews.
+    -> It also calculates the number of reviews each customer has (COUNT(reviews.id)).
+    -> Customers without reviews will have a count of 0 instead of being excluded.
+
+  
+  ## 12.3 where.associated and where.missing ----
+
+    -> The where.associated(:association) method finds records that have at least one related
+       record.
+    
+    ```
+    Customer.where.associated(:reviews)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT customers.* 
+    FROM customers
+    INNER JOIN reviews ON reviews.customer_id = customers.id
+    WHERE reviews.id IS NOT NULL
+    ```
+
+    -> Uses an INNER JOIN, meaning customers without reviews are excluded.
+    -> Equivalent to Customer.joins(:reviews).distinct.
+
+
+    -> The where.missing(:association) method finds records that do NOT have any related records.
+
+    ```
+    Customer.where.missing(:reviews)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT customers.* 
+    FROM customers
+    LEFT OUTER JOIN reviews ON reviews.customer_id = customers.id
+    WHERE reviews.id IS NULL
+    ```
+
+    -> Uses a LEFT OUTER JOIN but filters out customers who have reviews.
+    -> Only customers without reviews are returned.
+
+    
+
+
+
+
+
+
 
 
 
