@@ -1853,7 +1853,213 @@
 
     -> Now, every query will automatically filter out out-of-print books.
 
+    ```
+    irb> Book.new
+    => #<Book id: nil, out_of_print: false>
+    irb> Book.unscoped.new
+    => #<Book id: nil, out_of_print: nil>
+    ```
+
+
+  ## 14.4 Merging of Scopes ----
+
+    -> Scopes are combained using AND conditions
+
+    ```
+    class Book < ApplicationRecord
+      scope :in_print, -> { where(out_of_print: false) }
+      scope :out_of_print, -> { where(out_of_print: true) }
+
+      scope :recent, -> { where(year_published: 50.years.ago.year..) }
+      scope :old, -> { where(year_published: ...50.years.ago.year) }
+    end
+    ```
+
+    -> Now we can run 
+    ```
+    irb> Book.out_of_print.old
+    SELECT books.* FROM books WHERE books.out_of_print = 'true' AND 
+    books.year_published < 1969
+    ```
+
+    -> Overriding Scopes with merge: If you want the latest condition to override the previous one
+    ```
+    Book.in_print.merge(Book.out_of_print)
+    ```
+    -> This will return only out-of-print books, overriding the previous in_print scope.
+
+  
+
+  ## 14.5 Removing All Scoping ----
+
+    -> If you want to ignore all scopes (including default_scope), use unscoped.
+    ```
+    Book.unscoped.load
+    ```
+
+    -> Using unscoped with a block:
+    ```
+    Book.unscoped { Book.out_of_print }
+    ```
+    -> This will apply Book.out_of_print while ignoring other default scopes.
+
+
+
+# 15 Dynamic Finders */*/*/*/*
+
+  -> Active Record automatically provides finder methods for each field in your table. 
+  -> These dynamic finders allow us to quickly retrieve records without writing explicit SQL
+     queries.
+
+  -> If your Customer model has a field called first_name, we can use:
+    -> "Customer.find_by_first_name("Ryan")"
+  
+  -> This returns the first matching record where first_name = "Ryan".
+
+
+  -> You can find records by multiple attributes using and between the fields.
+    -> " Customer.find_by_first_name_and_orders_count("Ryan", 5) "
+  
+  -> This finds the first customer where: first_name = "Ryan", orders_count = 5
+
+
+
+# 16 Enums */*/*/*/*
+
+  -> Enums in Rails allow you to define a set of named values for an attribute.
+  -> storing them as integers in the database but referring to them by human-readable names in
+     our code.
+  -> When we declare an enum in your model, Rails: 
+    -> Stores values as integers in the database
+    -> Creates helper methods for querying and updating records
+    -> Generates scopes for filtering records based on enum values
+
+  -> Let's define an enum for an Order model:
+  ```
+  class Order < ApplicationRecord
+    enum :status, [:shipped, :being_packaged, :complete, :cancelled]
+  end
+  ```
+  -> This will store the status field as an integer in the database
+  -> Once the enum is defined, Rails automatically creates scopes to filter records
+  ```
+  Order.shipped
+  Order.not_shipped
+  ```
+
+  -> Generated SQL:
+  ```
+  SELECT * FROM orders WHERE status = 0;
+  ```
+
+  ```
+  irb> order = Order.shipped.first
+  irb> order.shipped?
+  => true
+  irb> order.complete?
+  => false
+  ```
+
+  -> Rails creates setter methods for changing enum values:
+  ```
+  irb> order = Order.first
+  irb> order.shipped!
+  UPDATE "orders" SET "status" = ?, "updated_at" = ? WHERE "orders"."id" = ?  [["status", 0], ["updated_at", "2019-01-24 07:13:08.524320"], ["id", 1]]
+  => true
+  ```
+
+  -> Generated SQL:
+  ```
+  UPDATE "orders" SET "status" = 0 WHERE "orders"."id" = 1;
+  ```
+
+  -> This updates the status field and returns true if successful.
+
+
+
+# 17 Understanding Method Chaining */*/*/*/*
+
+  -> Method chaining in Active Record allows you to combine multiple query methods in a single,
+     readable statement. 
+  -> This makes it easier to filter, join, and retrieve data efficiently.
+  -> we can chain methods as long as each method returns an ActiveRecord::Relation.
+  -> Methods that return a single object must be at the end of the chain.
+  -> The query is not executed immediately—it is sent to the database only when the data is 
+     actually needed.
+  
+
+  ## 17.1 Retrieving Filtered Data from Multiple Tables ----
+
+    -> Let's say we have a Customer model with Review associations. 
+    -> We want to get: customer.id, customer.last_name, review.body
+    -> Only for reviews created within the last week.
+
+    ```
+    Customer
+    .select("customers.id, customers.last_name, reviews.body")
+    .joins(:reviews)
+    .where("reviews.created_at > ?", 1.week.ago)
+    ```
+
+
+    -> 'select("customers.id, customers.last_name, reviews.body")' → Selects specific columns.
+    -> 'joins(:reviews)' → Joins the customers and reviews tables.
+    -> 'where("reviews.created_at > ?", 1.week.ago)' → Filters reviews created in the last 7 days.
+    -> Executes a single SQL query.
+
+    -> Generated SQL:
+    ```
+    SELECT customers.id, customers.last_name, reviews.body
+    FROM customers
+    INNER JOIN reviews
+      ON reviews.customer_id = customers.id
+    WHERE (reviews.created_at > '2024-02-17')
+    ```
+
+
+  ## 17.2 Retrieving Specific Data from Multiple Tables ---
+
+    -> Now, let's say we have a Book model that belongs to an Author.
+    -> We want to find a book titled "Abstraction and Specification in Program Development", 
+       and retrieve:
+       -> book.id
+       -> book.title
+       -> author.first_name
     
+    ```
+    Book
+    .select("books.id, books.title, authors.first_name")
+    .joins(:author)
+    .find_by(title: "Abstraction and Specification in Program Development")
+    ```
+
+    -> 'select("books.id, books.title, authors.first_name")' → Selects specific columns.
+    -> 'joins(:author)' → Joins the books and authors tables.
+    -> 'find_by(title: "Abstraction and Specification in Program Development")' → Searches for 
+       a book by title.
+    
+    -> Generated SQL: 
+    ```
+    SELECT books.id, books.title, authors.first_name
+    FROM books
+    INNER JOIN authors
+      ON authors.id = books.author_id
+    WHERE books.title = $1 [["title", "Abstraction and Specification in Program Development"]]
+    LIMIT 1
+    ```
+
+    -> Notice the LIMIT 1 → This is because find_by only returns one record.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
