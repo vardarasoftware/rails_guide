@@ -2296,7 +2296,443 @@
 
     -> When we only need IDs without loading full objects.
 
+
+    -> Use 'find_by_sql' when you need ActiveRecord objects but want to write raw SQL.
+    -> Use 'select_all' when you need raw data (faster performance).
+    -> Use 'pluck' when you need column values as an array.
+    -> Use 'pick' when you need only the first value of a column.
+    -> Use 'ids' when you need all primary key values.
+
+
+
+# 20 Existence of Objects */*/*/*/
+
+  -> When working with ActiveRecord in Rails, sometimes we
+     don’t need to fetch the full record but only check whether it exists in the database. 
+  -> Rails provides several methods to do this efficiently.
+  
+
+  ## exists? 
+    -> The 'exists?' method queries the database to check if a record exists. 
+    -> Instead of returning an object, it returns true or false.
+
+    ```
+    Customer.exists?(1)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT 1 FROM customers WHERE id = 1 LIMIT 1;
+    ```
+    -> Return true if a customer with ID 1 exists.
+    -> Return false if it doesn’t.
+
+
+  ## exists? with Multiple Values
+
+    -> We can check multiple values at once. If at least one of the records exists, it will
+       return true.
+    ```
+    Customer.exists?(id: [1, 2, 3])
+    Customer.exists?(first_name: ["Jane", "Sergei"])
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT 1 FROM customers WHERE id IN (1, 2, 3) LIMIT 1;
+    SELECT 1 FROM customers WHERE first_name IN ('Jane', 'Sergei') LIMIT 1;
+    ```
+
+    -> Returns true if at least one of the values exists.
+
+  
+  ## exists? Without Arguments
+
+    -> we can use exists? without passing any arguments. 
+    -> This checks if any record exists in the table.
+
+    ```
+    Customer.exists?
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT 1 FROM customers LIMIT 1;
+    ```
+
+    -> Returns true if the table is not empty.
+    -> Returns false if the table is empty.
+
+
+  ## any? 
+
+    -> Similar to exists?, but works on ActiveRecord relations.
+    -> Uses LIMIT 1 for efficiency.
+
+    ```
+    Order.any?
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT 1 FROM orders LIMIT 1;
+    ```
+
+    -> Returns true if there is at least one order.
+
+
+    #-> use with named scope
     
+    ```
+    Order.shipped.any?
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT 1 FROM orders WHERE status = 'shipped' LIMIT 1;
+    ````
+
+    -> Returns true if at least one shipped order exists.
+
+  
+  # many?
+
+    -> Similar to any?, but checks if more than one record exists.
+    -> Uses COUNT(*) for accuracy.
+
+    ```
+    Order.many?
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT COUNT(*) FROM (SELECT 1 FROM orders LIMIT 2);
+    ```
+
+    -> Returns true if there are at least two orders.
+
+
+    #-> Use with NAMED Scopes
+
+    ```
+    Order.shipped.many?
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT COUNT(*) FROM (SELECT 1 FROM orders WHERE status = 'shipped' LIMIT 2);
+    ```
+
+    -> Returns true if more than one shipped order exists.
+
+
+
+# 21 Calculations */*/*/*/*
+
+  -> Rails ActiveRecord provides built-in aggregate methods to perform calculations like count,
+     average, minimum, maximum, and sum directly on models or queries.
+  
+
+
+  ## 21.1 count
+    
+    ```
+    Customer.count
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT COUNT(*) FROM customers;
+    ```
+
+    -> Return the total number of Customers
+
+
+    ```
+    Customer.where(first_name: 'Ryan').count
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT COUNT(*) FROM customers WHERE first_name = 'Ryan';
+    ```
+
+    -> Returns the number of customers with the name "Ryan".
+
+
+    ```
+    Customer.includes(:orders).where(first_name: 'Ryan', orders: { status: 'shipped' }).count
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT COUNT(DISTINCT customers.id) FROM customers
+    LEFT OUTER JOIN orders ON orders.customer_id = customers.id
+    WHERE customers.first_name = 'Ryan' AND orders.status = 0;
+    ```
+
+    -> Returns the number of customers named Ryan who have shipped orders.
+
+
+  ## 21.2 average
+
+    -> The average method calculates the average of a column.
+
+    ```
+    Order.average("subtotal")
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT AVG(subtotal) FROM orders;
+    ```
+
+    -> Returns the average subtotal of all orders.
+
+
+
+  ## 21.3 minimum
+
+    -> The minimum method finds the smallest value in a column.
+    ```
+    Order.minimum("subtotal")
+    ```
+
+    -> SQL Query
+    ```
+    SELECT MIN(subtotal) FROM orders;
+    ```
+
+    -> Returns the smallest subtotal value among all orders.
+
+  
+  ## 21.4 maximum
+
+    -> The maximum method finds the largest value in a column.
+
+    ```
+    Order.maximum("subtotal")
+    ```
+
+    -> SQL Query
+    ```
+    SELECT MAX(subtotal) FROM orders;
+    ```
+
+    -> Returns the largest subtotal value among all orders.
+
+  
+  ## 21.5 sum
+
+    -> The sum method calculates the total sum of a column.
+
+    ```
+    Order.sum("subtotal")
+    ```
+
+    -> SQL Query
+    ```
+    SELECT SUM(subtotal) FROM orders;
+    ```
+
+    -> Returns the total of all order subtotals.
+
+
+
+    --> Use count when you need to find how many records exist.
+    --> Use average when you need to find the mean value of a column.
+    --> Use minimum & maximum when you need to find the smallest/largest value.
+    --> Use sum when you need to calculate the total of a column.
+
+
+
+# 22 Running EXPLAIN */*/*/*/*
+
+  -> The EXPLAIN command helps developers analyze SQL queries executed by ActiveRecord. 
+  -> It provides insights into query execution plans, revealing performance bottlenecks and 
+     query optimization strategies.
+  
+  ```
+  Customer.where(id: 1).joins(:orders).explain
+  ```
+
+  -> Generated SQL:
+  ```
+  EXPLAIN SELECT `customers`.* FROM `customers` 
+  INNER JOIN `orders` ON `orders`.`customer_id` = `customers`.`id` 
+  WHERE `customers`.`id` = 1;
+  ```
+
+  -> This helps debug slow queries and understand query optimization.
+
+  //--> Output for MySQL
+  +----+-------------+------------+-------+---------------+
+  | id | select_type | table      | type  | possible_keys |
+  +----+-------------+------------+-------+---------------+
+  |  1 | SIMPLE      | customers  | const | PRIMARY       |
+  |  1 | SIMPLE      | orders     | ALL   | NULL          |
+  +----+-------------+------------+-------+---------------+
+  +---------+---------+-------+------+-------------+
+  | key     | key_len | ref   | rows | Extra       |
+  +---------+---------+-------+------+-------------+
+  | PRIMARY | 4       | const |    1 |             |
+  | NULL    | NULL    | NULL  |    1 | Using where |
+  +---------+---------+-------+------+-------------+
+
+
+  -> table → Tables involved in the query.
+  -> type → How the table is accessed (e.g., ALL, index, ref).
+  -> possible_keys → Possible indexes used.
+  -> key → Actual index used.
+  -> rows → Estimated number of rows scanned.
+  -> Extra → Additional info like Using where, Using temporary, etc.
+
+
+  //--> Output for PostgreSQL
+                                  QUERY PLAN
+  ------------------------------------------------------------------------------
+  Nested Loop  (cost=4.33..20.85 rows=4 width=164)
+      ->  Index Scan using customers_pkey on customers  (cost=0.15..8.17 rows=1 width=164)
+            Index Cond: (id = '1'::bigint)
+      ->  Bitmap Heap Scan on orders  (cost=4.18..12.64 rows=4 width=8)
+            Recheck Cond: (customer_id = '1'::bigint)
+            ->  Bitmap Index Scan on index_orders_on_customer_id  (cost=0.00..4.18 rows=4 width=0)
+                  Index Cond: (customer_id = '1'::bigint)
+  (7 rows)
+
+  -> Index Scan → Query is using an index (efficient).
+  -> Bitmap Heap Scan → Some filtering is happening after index usage.
+  -> Nested Loop → Shows how tables are joined.
+  -> cost=4.33..20.85 → Estimated execution cost (lower is better).
+
+
+
+  --> Explain with include
+
+  ```
+  Customer.where(id: 1).includes(:orders).explain
+  ```
+
+  -> This might be execute two Queries
+
+  ```
+  EXPLAIN SELECT `customers`.* FROM `customers` WHERE `customers`.`id` = 1;
+  ```
+  ```
+  EXPLAIN SELECT `orders`.* FROM `orders` WHERE `orders`.`customer_id` IN (1);
+  ```
+
+  -> This happens because includes fetches associated records in a separate query.
+
+
+  //--> Output for MySQL
+  EXPLAIN SELECT `customers`.* FROM `customers`  WHERE `customers`.`id` = 1
+  +----+-------------+-----------+-------+---------------+
+  | id | select_type | table     | type  | possible_keys |
+  +----+-------------+-----------+-------+---------------+
+  |  1 | SIMPLE      | customers | const | PRIMARY       |
+  +----+-------------+-----------+-------+---------------+
+  +---------+---------+-------+------+-------+
+  | key     | key_len | ref   | rows | Extra |
+  +---------+---------+-------+------+-------+
+  | PRIMARY | 4       | const |    1 |       |
+  +---------+---------+-------+------+-------+
+
+  1 row in set (0.00 sec)
+
+  EXPLAIN SELECT `orders`.* FROM `orders`  WHERE `orders`.`customer_id` IN (1)
+  +----+-------------+--------+------+---------------+
+  | id | select_type | table  | type | possible_keys |
+  +----+-------------+--------+------+---------------+
+  |  1 | SIMPLE      | orders | ALL  | NULL          |
+  +----+-------------+--------+------+---------------+
+  +------+---------+------+------+-------------+
+  | key  | key_len | ref  | rows | Extra       |
+  +------+---------+------+------+-------------+
+  | NULL | NULL    | NULL |    1 | Using where |
+  +------+---------+------+------+-------------+
+
+
+  1 row in set (0.00 sec)
+
+
+  //--> Output for PostgreSQL
+      Customer Load (0.3ms)  SELECT "customers".* FROM "customers" WHERE "customers"."id" = $1  [["id", 1]]
+    Order Load (0.3ms)  SELECT "orders".* FROM "orders" WHERE "orders"."customer_id" = $1  [["customer_id", 1]]
+  => EXPLAIN SELECT "customers".* FROM "customers" WHERE "customers"."id" = $1 [["id", 1]]
+                                      QUERY PLAN
+  ----------------------------------------------------------------------------------
+  Index Scan using customers_pkey on customers  (cost=0.15..8.17 rows=1 width=164)
+    Index Cond: (id = '1'::bigint)
+  (2 rows)
+
+
+
+  ## 22.1 Explain Options
+
+    -> We can pass options to EXPLAIN for deeper analysis.
+
+    ```
+    Customer.where(id: 1).joins(:orders).explain(:analyze, :verbose)
+    ```
+
+    //--> Output for PostgreSQL
+        EXPLAIN (ANALYZE, VERBOSE) SELECT "shop_accounts".* FROM "shop_accounts" INNER JOIN "customers" ON "customers"."id" = "shop_accounts"."customer_id" WHERE "shop_accounts"."id" = $1 [["id", 1]]
+                                                                      QUERY PLAN
+    ------------------------------------------------------------------------------------------------------------------------------------------------
+    Nested Loop  (cost=0.30..16.37 rows=1 width=24) (actual time=0.003..0.004 rows=0 loops=1)
+      Output: shop_accounts.id, shop_accounts.customer_id, shop_accounts.customer_carrier_id
+      Inner Unique: true
+      ->  Index Scan using shop_accounts_pkey on public.shop_accounts  (cost=0.15..8.17 rows=1 width=24) (actual time=0.003..0.003 rows=0 loops=1)
+            Output: shop_accounts.id, shop_accounts.customer_id, shop_accounts.customer_carrier_id
+            Index Cond: (shop_accounts.id = '1'::bigint)
+      ->  Index Only Scan using customers_pkey on public.customers  (cost=0.15..8.17 rows=1 width=8) (never executed)
+            Output: customers.id
+            Index Cond: (customers.id = shop_accounts.customer_id)
+            Heap Fetches: 0
+    Planning Time: 0.063 ms
+    Execution Time: 0.011 ms
+    (12 rows)
+
+
+    -> The actual time column shows real execution times, helping optimize slow queries.
+
+
+    ```
+    Customer.where(id: 1).joins(:orders).explain(:analyze)
+    ```
+
+    //--> Output for MySQL
+      ANALYZE SELECT `shop_accounts`.* FROM `shop_accounts` INNER JOIN `customers` ON `customers`.`id` = `shop_accounts`.`customer_id` WHERE `shop_accounts`.`id` = 1
+    +----+-------------+-------+------+---------------+------+---------+------+------+--------+----------+------------+--------------------------------+
+    | id | select_type | table | type | possible_keys | key  | key_len | ref  | rows | r_rows | filtered | r_filtered | Extra                          |
+    +----+-------------+-------+------+---------------+------+---------+------+------+--------+----------+------------+--------------------------------+
+    |  1 | SIMPLE      | NULL  | NULL | NULL          | NULL | NULL    | NULL | NULL | NULL   | NULL     | NULL       | no matching row in const table |
+    +----+-------------+-------+------+---------------+------+---------+------+------+--------+----------+------------+--------------------------------+
+    1 row in set (0.00 sec)
+
+
+    -> This helps find slow joins, missing indexes, and inefficient filters.
+
+
+
+    -> When to use Explain?
+
+      -> If your query is slow and you need to debug performance issues.
+      -> Before deploying complex queries to optimize them.
+      -> When working with large datasets to find missing indexes.
+      -> To understand how ActiveRecord generates queries.
+
+      
+
+
+
+
+
+
+
+
+
 
 
 
