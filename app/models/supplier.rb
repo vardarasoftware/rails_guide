@@ -1,4 +1,4 @@
 class Supplier < ApplicationRecord
-    has_one :account
-    validates :account, presence: true
+    has_one :account, ->(supplier) { where active: supplier.active? }
+    has_one :account_history, through: :account
 end

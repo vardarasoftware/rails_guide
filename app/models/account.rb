@@ -1,5 +1,5 @@
 class Account < ApplicationRecord
-    validates :subdomain, exclusion: { in: %w[ www us ca jp ], message: "%{value} is reserved." }
-    validates :email, uniqueness: true
-    validates :password, confirmation: true, unless: -> { password.blank? }
+    belongs_to :supplier, inverse_of: :account
+    validates :account_number, presence: true
+    has_one :account_history, dependent: :destroy
 end
