@@ -1590,7 +1590,273 @@
     -> Uses a LEFT OUTER JOIN but filters out customers who have reviews.
     -> Only customers without reviews are returned.
 
+
+
+# 13 Eager Loading Associations */*/*/*/*
+
+  -> Eager loading is used to optimize database queries by reducing the number of queries
+     executed when fetching associated records.
+  
+  ## 13.1 N + 1 Queries Problem ----
+
+    -> When fetching associated records, Active Record executes too many queries, 
+       which slows down performance.
+    ```
+    books = Book.limit(10)
+
+    books.each do |book|
+      puts book.author.last_name
+    end
+    ```
+
+    -> SELECT * FROM books LIMIT 10 → 1 query
+    -> Then, for each book: SELECT * FROM authors WHERE authors.id = ? → 10 queries
+    -> Total Queries = 1 + 10 = 11 (BAD Performance!)
+
+    #### 13.1.1 Solution: Eager Loading Methods
+
+    -> Active Record provides three methods to solve the N + 1 problem:
+      -> includes
+      -> preload 
+      -> eager_load
+
+  
+  ## 13.2 includes ----
+
+    -> Fetches records efficiently using either preload or eager_load depending on conditions.
+
+    ```
+    books = Book.includes(:author).limit(10)
+
+    books.each do |book|
+      puts book.author.last_name
+    end
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT books.* FROM books LIMIT 10;
+    SELECT authors.* FROM authors WHERE authors.id IN (1,2,3,4,5,6,7,8,9,10);
+    ```
+
+    -> Loads all authors in a single query instead of executing 10 separate queries.
+    -> Reduces queries from 11 to 2 → Better performance!
+
+    ### 13.2.1 Eager Loading Multiple Associations
+
+    ```
+    Customer.includes(:orders, :reviews)
+    ```
+    ->  Loads all customers, orders, and reviews in minimal queries.
+
+
+    ```
+    Customer.includes(orders: { books: [:supplier, :author] }).find(1)
+    ```
+    ->  Loads orders, books, suppliers, and authors all at once for the customer with id = 1.
+
+
+    ### 13.2.2 Specifying Conditions on Eager Loaded Associations
+
+    ```
+    Author.includes(:books).where(books: { out_of_print: true })
+    ```
+    ->  Uses a LEFT OUTER JOIN to fetch authors even if they have no books.
+
+    ```
+    Author.includes(:books).where("books.out_of_print = true").references(:books)
+    ```
+    -> Forces a JOIN when using raw SQL conditions.
+
+  
+
+  ## 13.3 preload ---
+
+    -> Loads associated records using separate queries (useful when JOIN is not needed).
+
+    ```
+    books = Book.preload(:author).limit(10)
+
+    books.each do |book|
+      puts book.author.last_name
+    end
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT books.* FROM books LIMIT 10;
+    SELECT authors.* FROM authors WHERE authors.id IN (1,2,3,4,5,6,7,8,9,10);
+    ```
+
+    -> When we don’t need joins avoids potential performance issues.
+    -> Safer than includes when conditions are not required.
+
+  
+  ## 13.4 eager_load ---
+
+    -> Forces a single SQL query using LEFT OUTER JOIN.
+
+    ```
+    books = Book.eager_load(:author).limit(10)
+
+    books.each do |book|
+      puts book.author.last_name
+    end
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT books.*, authors.* FROM books
+    LEFT OUTER JOIN authors ON authors.id = books.author_id
+    LIMIT 10;
+    ```
+
+    -> When you need conditions on joined tables.
+    -> When you want a single SQL query instead of multiple queries.
+
+
+  ## 13.5 strict_loading---
+
+    -> Ensures all associations are eagerly loaded—throws an error if lazy loading occurs.
+
+    ```
+    user = User.strict_loading.first
+    user.address.city  # Raises `ActiveRecord::StrictLoadingViolationError`
+    ```
+
+    -> Prevents hidden N+1 queries.
+
+    ```
+    config.active_record.strict_loading_by_default = true
+    ```
+    -> Raise an error if any assiciation is lazily loading
+
+  
+  ## 13.6 strict_loading! ----
+
+    ```
+    user = User.first
+    user.strict_loading!
+    user.address.city # raises an ActiveRecord::StrictLoadingViolationError
+    user.comments.to_a # raises an ActiveRecord::StrictLoadingViolationError
+    ```
+    -> Forces strict loading mode on this instance.
+
+
+    ```
+    user.strict_loading!(mode: :n_plus_one_only)
+    user.address.city # => "Tatooine"
+    user.comments.to_a # => [#<Comment:0x00...]
+    user.comments.first.likes.to_a # raises an ActiveRecord::StrictLoadingViolationError
+    ```
+
+    -> Only raises an error if a true N+1 issue is detected.
+
+  
+  ## 13.7 strict_loading option on an association ----
+
+    ```
+    class Author < ApplicationRecord
+      has_many :books, strict_loading: true
+    end
+    ```
+    -> Ensures books are always eager loaded for authors.
+
+
+
+# 14 Scopes */*/*/*/*
+
+  -> Scopes in Rails allow you to define reusable query logic that can be used across your
+     application. 
+  -> They make queries more readable and maintainable.
+  -> A scope is a predefined query that can be called as a method on a model or an association. 
+  -> It helps in organizing and reusing common query patterns.
+
+  ```
+  class Book < ApplicationRecord
+    scope :out_of_print, -> { where(out_of_print: true) }
+  end
+  ```
+  -> Now, instead of writing Book.where(out_of_print: true), you can simply call:
+    "Book.out_of_print"
+
+  -> This will return all books that are out of print.
+  -> Scopes can also be used on associations:
+  ```
+  author = Author.first
+  author.books.out_of_print
+  ```
+  
+  -> This will return all out-of-print books by a specific author.
+
+  -> we can combine multiple scopes to refine our queries.
+  ```
+  class Book < ApplicationRecord
+    scope :out_of_print, -> { where(out_of_print: true) }
+    scope :out_of_print_and_expensive, -> { out_of_print.where("price > 500") }
+  end
+  ```
+
+  -> Book.out_of_print → returns out-of-print books.
+  -> Book.out_of_print_and_expensive → returns out-of-print books that cost more than 500.
+
+
+  ## 14.1 Passing in Arguments ---
+
+    -> we can pass arguments to scopes, just like method parameters.
+    ```
+    class Book < ApplicationRecord
+      scope :costs_more_than, ->(amount) { where("price > ?", amount) }
+    end
+    ```
+
+    -> Now we can call
+
+    //-> "Book.costs_more_than(100)"
+
+    -> This will return all books that cost more than 100.
+
+    -> Alternative we can use class method
+    ```
+    class Book < ApplicationRecord
+      def self.costs_more_than(amount)
+        where("price > ?", amount)
+      end
+    end
+    ```
+    -> Both approaches work, but using scope makes queries more chainable.
+
+  
+  ## 14.2 Using Conditionals ---
+
+    -> Scopes can also include conditionals to dynamically change the query.
+
+    ```
+    class Order < ApplicationRecord
+      scope :created_before, ->(time) { where(created_at: ...time) if time.present? }
+    end
+    ```
+
+    -> If time is provided, it filters orders created before that time.
+    -> If time is nil, it simply returns all orders.
+
+  
+  ## 14.3 Applying a Default Scope ----
+
+    -> A default_scope is applied to all queries unless explicitly removed.
+
+    ```
+    class Book < ApplicationRecord
+      default_scope { where(out_of_print: false) }
+    end
+    ```
+
+    -> Now, every query will automatically filter out out-of-print books.
+
     
+
+
+
 
 
 
