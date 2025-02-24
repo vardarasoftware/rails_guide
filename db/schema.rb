@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_21_051555) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_21_051621) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -124,6 +124,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_21_051555) do
     t.bigint "library_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "books_orders", force: :cascade do |t|
+    t.integer "book_three_id", null: false
+    t.integer "order_two_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_three_id"], name: "index_books_orders_on_book_three_id"
+    t.index ["order_two_id"], name: "index_books_orders_on_order_two_id"
   end
 
   create_table "categories_products", id: false, force: :cascade do |t|
@@ -482,6 +491,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_21_051555) do
   add_foreign_key "book_threes", "author_threes"
   add_foreign_key "book_threes", "supplier_twos"
   add_foreign_key "book_twos", "authortwos"
+  add_foreign_key "books_orders", "book_threes"
+  add_foreign_key "books_orders", "order_twos"
   add_foreign_key "employees", "employees", column: "manager_id"
   add_foreign_key "line_items", "orders"
   add_foreign_key "notifications", "usertwos"
