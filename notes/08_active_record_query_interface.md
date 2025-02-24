@@ -2052,26 +2052,251 @@
 
 
 
+# 18 Find or Build a New Object */*/*/*/*
+
+  -> In Rails, sometimes we need to find a record in the database or create it if it doesn't
+     exist. 
+  -> Instead of writing separate queries for finding and creating, Active Record provides 
+     three useful methods:
+     -> find_or_create_by
+     -> find_or_create_by!
+     -> find_or_initialize_by
+  
+
+  ## 18.1 find_or_create_by ---
+
+    -> Checks if a record exists with the given attributes.
+    -> If found, it returns the existing record.
+    -> If not found, it creates and saves a new record.
+
+    ```
+    irb> Customer.find_or_create_by(first_name: 'Andy')
+    => #<Customer id: 5, first_name: "Andy", last_name: nil, title: nil, visits: 0, orders_count: nil, lock_version: 0, created_at: "2019-01-17 07:06:45", updated_at: "2019-01-17 07:06:45">
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT * FROM customers WHERE (customers.first_name = 'Andy') LIMIT 1
+    BEGIN
+    INSERT INTO customers (created_at, first_name, locked, orders_count, updated_at) VALUES ('2011-08-30 05:22:57', 'Andy', 1, NULL, '2011-08-30 05:22:57')
+    COMMIT
+    ````
+
+    -> If Andy already exists, it returns the existing record.
+    -> If Andy does not exist, it creates and saves a new record.
+
+    -> If you need to set additional attributes when creating a record, but don’t want them in
+       the WHERE query, use 'create_with'
+    ```
+    Customer.create_with(locked: false).find_or_create_by(first_name: "Andy")
+    ```
+
+    -> Finds Andy if already exists.
+    -> If not found, creates Andy and sets locked: false.
+
+    -> Another way to add extra attributes only when creating a new record is using a block
+    ```
+    Customer.find_or_create_by(first_name: "Andy") do |c|
+      c.locked = false
+    end
+    ```
+    -> Block executes only when a new record is created.
+    -> If Andy already exists, the block is ignored.
+
+
+  ## 18.2 find_or_create_by! -----
+
+    -> Works like find_or_create_by
+    -> Raises an error if the new record fails validation.
+
+    ```
+    validates :orders_count, presence: true
+    ```
+
+    -> Now we can call it
+    ```
+    Customer.find_or_create_by!(first_name: "Andy")
+    ```
+
+    -> It will raise an error and the error is:
+    ```
+    ActiveRecord::RecordInvalid: Validation failed: Orders count can't be blank
+    ```
+
+
+    -> Use this when we want to ensure the record is valid before saving.
+
+  
+
+  ## 18.3 find_or_initialize_by ------
+
+    -> Finds the record if it exists.
+    -> If not found, it creates a new instance BUT DOES NOT SAVE IT.
+
+    ```
+    irb> nina = Customer.find_or_initialize_by(first_name: 'Nina')
+    => #<Customer id: nil, first_name: "Nina", orders_count: 0, locked: true, created_at: "2011-08-30 06:09:27", updated_at: "2011-08-30 06:09:27">
+
+    irb> nina.persisted?
+    => false
+
+    irb> nina.new_record?
+    => true
+    ```
+
+    -> This Generate SQL:
+    ```
+    SELECT * FROM customers WHERE first_name = 'Nina' LIMIT 1;
+    ```
+
+    -> No INSERT heppens yet
+    -> TO save it manually call:
+    ```
+    nina.save
+    ```
+
+    -> Useful when we want to modify the object before saving.
 
 
 
 
+# 19 Finding by SQL */*/*/*/*
+
+  -> Sometimes, we need to write custom SQL queries in Rails instead of using Active Record’s
+     built-in methods. 
+  -> Rails provides different ways to achieve this while keeping the results in a structured 
+     format.
+  -> 'find_by_sql' allows you to run raw SQL queries but returns ActiveRecord objects.
+  -> Even if the query returns a single record, it is wrapped inside an array.
+
+  ```
+  irb> Customer.find_by_sql("SELECT * FROM customers INNER JOIN orders ON customers.id = orders.customer_id ORDER BY customers.created_at desc")
+  => [#<Customer id: 1, first_name: "Lucas" ...>, #<Customer id: 2, first_name: "Jan" ...>, ...]
+  ```
+
+
+  -> The Generated SQL:
+  ```
+  SELECT * FROM customers 
+  INNER JOIN orders 
+  ON customers.id = orders.customer_id 
+  ORDER BY customers.created_at DESC;
+  ```
+
+  -> Returns ActiveRecord objects, so we can call model methods on them.
+
+
+  ## 19.1 select_all -----
+
+    -> Similar to find_by_sql, but returns raw data instead of ActiveRecord objects.
+    -> Returns an instance of ActiveRecord::Result, which is an array of hashes.
+
+    ```
+    Customer.connection.select_all("SELECT first_name, created_at FROM customers WHERE id = 1").to_a
+    ```
+
+    -> This will generate the SQL:
+    ```
+    SELECT first_name, created_at FROM customers WHERE id = 1;
+    ```
+
+    -> When we need raw database results 
+
+
+  ## 19.2 pluck ----
+
+    -> pluck retrieves specific column values as an array.
+    -> It is faster than select because it does not create ActiveRecord objects.
+
+    ```
+    Book.where(out_of_print: true).pluck(:id)
+    ````
+
+    -> Generated SQL:
+    ```
+    SELECT id FROM books WHERE out_of_print = true;
+    ```
+
+    -> Result: [1, 2, 3]
 
 
 
+    -> Get distinc value
+    ```
+    Order.distinct.pluck(:status)
+    ```
+
+    -> The generated SQL:
+    ```
+    SELECT DISTINCT status FROM orders;
+    ```
+
+    -> Result: ["shipped", "being_packed", "cancelled"]
 
 
+    -> Get multipal column values
+    ```
+    Customer.pluck(:id, :first_name)
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT customers.id, customers.first_name FROM customers;
+    ```
+
+    -> Result: [[1, "David"], [2, "Fran"], [3, "Jose"]]
 
 
+  ## 19.3 pick -----
+
+    -> Similar to 'pluck', but only returns the first matching value instead of an array.
+    -> Equivalent to 'relation.limit(1).pluck(column).first'.
+
+    ```
+    Customer.where(id: 1).pluck(:id).first
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT id FROM customers WHERE id = 1 LIMIT 1;
+    ```
+
+    -> When we only need a single column value from one record.
 
 
+  
+  ## 19.4 ids ----
+
+    -> Similar to pluck(:id), but automatically fetches the primary key.
+
+    ```
+    Customer.ids
+    ```
+
+    -> Generated SQL:
+    ```
+    SELECT id FROM customers;
+    ```
+
+    -> Result: [1, 2, 3, 4, 5]
 
 
+    -> If our table has a custom primary key:
+    ```
+    class Customer < ApplicationRecord
+      self.primary_key = "customer_id"
+    end
+    ```
 
+    -> Now, Customer.ids will automatically fetch
+    -> Generated SQL:
+    ```
+    SELECT customer_id FROM customers;
+    ```
 
+    -> When we only need IDs without loading full objects.
 
-
-
+    
 
 
 
