@@ -1,9 +1,9 @@
 class EmailContact
   include ActiveModel::API
-  
+
   attr_accessor :name, :email, :message
   validates :name, :email, :message, presence: true
-  
+
   def deliver
     if valid?
       puts "Email sent to #{email}"

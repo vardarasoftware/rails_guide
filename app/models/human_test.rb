@@ -1,9 +1,9 @@
 require "test_helper"
 
-class PersonTest < ActiveSupport::TestCase
+class HumanTest < ActiveSupport::TestCase
   include ActiveModel::Lint::Tests
 
   setup do
-    @model = Person.new
+    @model = Human.new
   end
 end
