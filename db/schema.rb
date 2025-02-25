@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_21_051621) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_25_113701) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -25,6 +25,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_21_051621) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "active"
+    t.string "subdomain"
     t.index ["supplier_id"], name: "index_accounts_on_supplier_id", unique: true
   end
 
