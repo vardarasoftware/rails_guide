@@ -125,6 +125,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_25_113701) do
     t.bigint "library_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "author_id"
+    t.index ["author_id"], name: "index_books_on_author_id"
   end
 
   create_table "books_orders", force: :cascade do |t|
@@ -483,15 +485,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_25_113701) do
     t.datetime "updated_at", null: false
   end
 
-  add_foreign_key "account_histories", "accounts"
-  add_foreign_key "accounts", "suppliers"
-  add_foreign_key "appointments", "patients"
-  add_foreign_key "appointments", "physicians"
   add_foreign_key "assemblies_parts", "assemblies"
   add_foreign_key "assemblies_parts", "parts"
   add_foreign_key "book_threes", "author_threes"
   add_foreign_key "book_threes", "supplier_twos"
   add_foreign_key "book_twos", "authortwos"
+  add_foreign_key "books", "authors"
   add_foreign_key "books_orders", "book_threes"
   add_foreign_key "books_orders", "order_twos"
   add_foreign_key "employees", "employees", column: "manager_id"
