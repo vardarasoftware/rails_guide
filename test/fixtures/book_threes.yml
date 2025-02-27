@@ -5,9 +5,13 @@ one:
   year_published: 1
   price: 9.99
   out_of_print: false
+  author_three: one
+  supplier_two: one
 
 two:
   title: MyString
   year_published: 1
   price: 9.99
   out_of_print: false
+  author_three: two
+  supplier_two: two

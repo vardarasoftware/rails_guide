@@ -2,6 +2,16 @@
 
 one:
   name: MyString
+  surname: MyString
+  email: MyString
+  bio: MyString
+  password: MyString
+  registration_number: MyString
 
 two:
   name: MyString
+  surname: MyString
+  email: MyString
+  bio: MyString
+  password: MyString
+  registration_number: MyString
