@@ -1,6 +1,16 @@
 <p style="color: green"><%= notice %></p>
 
 <%= render @blog_post %>
+<h1>Blog Post Details</h1>
+
+<%= render partial: "blog_post", locals: { blog_post: @blog_post } %>
+<%= render partial: "blog_post", locals: { blog_post: @blog_post, theme: "dark" } %>
+<%= render(layout: "box", locals: { blog_post: @blog_post }) do %>
+  <div>
+    <h2><%= blog_post.title %></h2>
+    <p><%= blog_post.body %></p>
+  </div>
+<% end %>
 
 <div>
   <%= link_to "Edit this blog post", edit_blog_post_path(@blog_post) %> |

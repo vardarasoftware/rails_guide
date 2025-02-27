@@ -1,2 +1,13 @@
-<div id="<%= dom_id blog_post %>">
-</div>
+<%= tag.div id: dom_id(blog_post), class: theme do %>
+  <h1><%= blog_post.title %></h1>
+  <p><%= truncate(blog_post.content, length: 200) %></p>
+  <%= link_to "Read More", blog_post_path(blog_post), class: "btn btn-primary" %>
+  <p><em>Posted on <%= blog_post.created_at.strftime("%B %d, %Y") %></em></p>
+<% end %>
+
+<% local_assigns.with_defaults(related_posts: []) => { blog_post:, related_posts: } %>
+
+<%# locals: (blog_post:, theme: "light") -%>
+
+
+
