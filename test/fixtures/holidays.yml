@@ -2,10 +2,10 @@
 
 one:
   name: MyString
-  date: 2025-02-07
+  holiday_date: 2025-02-07
   description: MyText
 
 two:
   name: MyString
-  date: 2025-02-07
+  holiday_date: 2025-02-07
   description: MyText

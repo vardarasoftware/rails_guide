@@ -3,8 +3,10 @@
 one:
   title: MyString
   author: MyString
+  library: one
 
 two:
   title: MyString
   author: MyString
+  library: two
   

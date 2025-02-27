@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Blog - <%= content_for?(:title) ? yield(:title) : "My Blog" %></title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+</head>
+<body>
+
+  <header>
+    <h1>My Blog - Insights & Stories</h1>
+    <nav>
+      <%= link_to "Home", blog_posts_path %> |
+      <%= link_to "All Posts", blog_posts_path %>
+    </nav>
+  </header>
+
+  <section>
+    <%= yield %>  <!-- Blog post content will go here -->
+  </section>
+
+  <footer>
+    <p>&copy; <%= Date.current.year %> My Blog</p>
+  </footer>
+
+</body>
+</html>

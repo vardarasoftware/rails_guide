@@ -2,8 +2,20 @@
 
 one:
   name: MyString
-  text: MyString
+  description: MyString
+  customer_id: 1
+  product_sku: MyString
+  user_id: 1
+  price: 100
+  category: "Electronics"
+  legacy_code: "LEGACY001"
 
 two:
   name: MyString
-  text: MyString
+  description: MyString
+  customer_id: 2
+  product_sku: MyString
+  user_id: 2
+  price: 100
+  category: MyString
+  legacy_code: MyString

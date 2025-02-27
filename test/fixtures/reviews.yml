@@ -2,12 +2,12 @@
 
 one:
   customer: one
-  book: one
+  book_three: one
   state: 1
   content: MyText
 
 two:
   customer: two
-  book: two
+  book_three: two
   state: 1
   content: MyText

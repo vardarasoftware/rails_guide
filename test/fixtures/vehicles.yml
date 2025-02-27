@@ -1,11 +1,13 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  type: 
-  color: MyString
+  id: 1
+  vehicle_type: Car
+  color: Red
   price: 9.99
 
 two:
-  type: 
-  color: MyString
+  id: 2
+  vehicle_type: Bike
+  color: Blue
   price: 9.99
