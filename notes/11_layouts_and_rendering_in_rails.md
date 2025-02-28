@@ -943,7 +943,719 @@
     Set-Cookie: _blog_session=...snip...; path=/; HttpOnly
     Cache-Control: no-cache
     ```
+
+
+
+# 3 Structuring Layouts */*/*/*/*
+
+  -> When Rails renders a view, it combines that view with a layout to create the final response.
+  -> Layouts help maintain a consistent structure across your application while allowing 
+     individual views to insert their unique content.
     
+    > Asset tags
+    > yield and content_for
+    > Partials
+
+  
+
+  ## 3.1 Asset Tag Helpers ----
+
+    -> Asset tag helpers generate HTML tags to include JavaScript, CSS, images, videos, and 
+       audios in your views. 
+    -> They help in managing assets efficiently and ensuring paths are correctly resolved.
+
+    -> auto_discovery_link_tag
+    -> javascript_include_tag
+    -> stylesheet_link_tag
+    -> image_tag
+    -> video_tag
+    -> audio_tag
+
+    
+    ### 3.1.1 Linking to Feeds with the auto_discovery_link_tag
+
+      -> The auto_discovery_link_tag helper automatically generates a <link> tag in the <head>
+         section of our HTML to help browsers and feed readers detect RSS, Atom, or JSON feeds.
+      
+      ```
+      <%= auto_discovery_link_tag(:rss, {action: "feed"},
+      {title: "RSS Feed"}) %>
+      ```
+
+      -> :rss → The type of feed (:rss, :atom, or :json).
+      -> { action: "feed" } → Specifies the URL for the feed.
+      -> { title: "RSS Feed" } → Sets the title for the link.
+
+      --> Generated HTML:
+      ```
+      <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed.rss">
+      ```
+
+    
+    ### 3.1.2 Linking to JavaScript Files with the javascript_include_tag
+
+      -> The javascript_include_tag helper generates an HTML <script> tag to include JavaScript
+         files in your Rails application.
+      
+      ```
+      <%= javascript_include_tag "main" %>
+      ```
+
+      -> Generated HTML
+      ```
+      <script src='/assets/main.js'></script>
+      ```
+      -> This will automatically load app/assets/javascripts/main.js.
+
+
+      -->  How It Works with the Asset Pipeline
+        -> Before Rails 3.1 → JavaScript files were stored in public/javascripts/ and manually
+           included.
+        -> With Asset Pipeline (Rails 3.1+) → JavaScript files are stored in:
+          > app/assets/javascripts/
+          > lib/assets/javascripts/
+          > vendor/assets/javascripts/
+        -> Rails compiles and serves JavaScript from these locations through /assets/ instead of /
+           public/.
+      
+
+      ```
+      <%= javascript_include_tag "main", "columns" %>
+      ```
+
+      -> Generated HTML:
+      ```
+      <script src='/assets/main.js'></script>
+      <script src='/assets/columns.js'></script>
+      ```
+
+
+
+      -> If the file is inside app/assets/javascripts/photos/columns.js, we need to specify the
+         full path:
+      ```
+      <%= javascript_include_tag "main", "/photos/columns" %>
+      ```
+
+      -> Generated HTML:
+      ```
+      <script src='/assets/main.js'></script>
+      <script src='/assets/photos/columns.js'></script>
+      ```
+
+
+
+      -> If we want to load a script from an external URL, we can specify the full URL:
+
+      ```
+      <%= javascript_include_tag "https://example.com/main.js" %>
+      ```
+
+      -> Generated HTML:
+      ```
+      <script src='https://example.com/main.js'></script>
+      ```
+    
+
+    ### 3.1.3 Linking to CSS Files with the stylesheet_link_tag
+
+      -> The stylesheet_link_tag helper generates an HTML <link> tag to include CSS files in our
+         Rails application.
+      
+      ```
+      <%= stylesheet_link_tag "main" %>
+      ```
+
+      -> Generated HTMl:
+      ```
+      <link rel="stylesheet" href="/assets/main.css" />
+      ```
+      -> This will automatically load app/assets/stylesheets/main.css.
+
+
+      -> Including Multiple CSS Files
+      ```
+      <%= stylesheet_link_tag "main", "columns" %>
+      ```
+
+      -> Generated HTML:
+      ```
+      <link rel="stylesheet" href="/assets/main.css" />
+      <link rel="stylesheet" href="/assets/columns.css" />
+      ```
+
+
+
+      -> Including CSS from a Subdirectory
+      -> If the file is inside app/assets/stylesheets/photos/columns.css, we need to specify the
+         full path
+      
+      ```
+      <%= stylesheet_link_tag "main", "photos/columns" %>
+      ```
+
+      -> Generated HTML:
+      ```
+      <link rel="stylesheet" href="/assets/main.css" />
+      <link rel="stylesheet" href="/assets/photos/columns.css" />
+      ```
+
+
+      -> Including an External CSS File
+      -> If we want to load a stylesheet from an external URL, we can specify the full URL:
+      ```
+      <%= stylesheet_link_tag "https://example.com/main.css" %>
+      ```
+
+      -> Generated HTML:
+      ```
+      <link rel="stylesheet" href="https://example.com/main.css" />
+      ```
+
+
+      -> By default, stylesheet_link_tag sets rel="stylesheet", but you can override it using 
+         the :rel option:
+      ```
+      <%= stylesheet_link_tag "main_print", media: "print" %>
+      ```
+
+      -> Generated HTML:
+      ```
+      <link rel="stylesheet" href="/assets/main_print.css" media="print" />
+      ```
+
+      -> This is useful for print stylesheets, which apply only when printing a page.
+
+
+    
+
+    ### 3.1.4 Linking to Images with the image_tag
+
+      -> The image_tag helper in Rails is used to generate an HTML <img> tag for displaying 
+         images in your views. 
+      -> It automatically points to the app/assets/images directory or public/images.
+
+      -> To display an image, use:
+      ```
+      <%= image_tag "header.png" %>
+      ```
+
+      -> This generates:
+      ```
+      <img src="/assets/header.png" />
+      ```
+      -> The image should be inside app/assets/images/ or public/images/.
+
+
+
+      -> If our image is inside a subfolder like app/assets/images/icons/, use:
+
+      ```
+      <%= image_tag "icons/delete.gif" %>
+      ```
+
+      -> This generates:
+      ```
+      <img src="/assets/icons/delete.gif" />
+      ```
+
+
+
+      -> You can customize the <img> tag by passing additional HTML attributes:
+
+      -> Setting Width & Height
+      ```
+      <%= image_tag "icons/delete.gif", height: 45 %>
+      ```
+
+      -> This Generates:
+      ```
+      <img src="/assets/icons/delete.gif" height="45" />
+      ```
+
+
+      -> Setting Custom Size
+      -> Instead of height and width, we can use size: "WxH":
+      ```
+      <%= image_tag "home.gif", size: "50x20" %>
+      ```
+
+      -> Generates:
+      ```
+      <img src="/assets/home.gif" width="50" height="20" />
+      ```
+
+
+
+    ### 3.1.5 Linking to Videos with the video_tag
+
+      -> The video_tag helper in Rails generates an HTML5 <video> tag to embed videos in our 
+         views. 
+      -> By default, it loads videos from the public/videos directory or the asset pipeline.
+
+
+      -> To display a video, use:
+      ```
+      <%= video_tag "movie.ogg" %>
+      ```
+      -> This generates:
+      ```
+      <video src="/videos/movie.ogg"></video>
+      ```
+
+      -> The video file should be placed inside public/videos/ or app/assets/videos/.
+
+
+      -> Multiple Video Sources for Browser Compatibility
+      -> Different browsers support different video formats. To provide multiple formats:
+
+      ```
+      <%= video_tag ["trailer.ogg", "movie.ogg"] %>
+      ```
+
+      -> This will generates
+      ```
+      <video>
+        <source src="/videos/trailer.ogg">
+        <source src="/videos/movie.ogg">
+      </video>
+      ```
+
+      -> Some browsers support MP4 but not OGG (or vice versa).
+      -> The browser will pick the first supported format.
+
+    
+
+    ### 3.1.6 Linking to Audio Files with the audio_tag
+
+      -> The audio_tag helper in Rails generates an HTML5 <audio> tag to embed and play audio 
+         files in your views. 
+      -> By default, it loads files from public/audios/ or app/assets/audios/
+
+
+      -> To embed an audio file in your view:
+      ```
+      <%= audio_tag "music.mp3" %>
+      ```
+
+      -> This Generates:
+      ```
+      <audio src="/audios/music.mp3"></audio>
+      ```
+
+      -> By default, Rails looks for the file in public/audios/.
+
+
+      -> If your audio file is inside a folder like app/assets/audios/songs/, use:
+      ```
+      <%= audio_tag "songs/first_song.mp3" %>
+      ```
+
+      -> This Generates:
+      ```
+      <audio src="/assets/songs/first_song.mp3"></audio>
+      ```
+  
+
+  ## 3.2 Understanding yield ----
+
+    -> In Rails layouts, yield is used to insert content from the current view into the layout.
+    -> This helps create a consistent structure for multiple pages while allowing each page to
+       insert its own unique content.
+    
+    -> The simplest way to use yield is to have one placeholder where the content of the current
+       view will be inserted.
+
+    ```
+    <html>
+      <head>
+        <title>My Blog</title>
+      </head>
+      <body>
+        <%= yield %>
+      </body>
+    </html>
+    ```
+
+    -> Here, yield acts as a placeholder for the content of the current view.
+    -> If we're rendering posts/show.html.erb, the content from show.html.erb will be inserted
+       where <%= yield %> is.
+    
+
+
+    --> we can have multiple yield placeholders in a layout. 
+    --> These are called named yield regions, and they allow inserting content into specific
+        sections of the layout.
+    
+    ```
+    <html>
+      <head>
+        <%= yield :head %>
+      </head>
+      <body>
+        <%= yield %>
+      </body>
+    </html>
+    ```
+
+
+
+  ## 3.3 Using the content_for Method -----
+
+    -> The content_for method in Rails allows you to insert page-specific content into a named
+       yield block in your layout. 
+    -> This is useful when you want to customize certain sections while still using a shared
+       layout for multiple pages.
+    -> Instead of inserting content everywhere with <%= yield %>, content_for lets we define 
+       specific placeholders where different content can be inserted.
+
+      ```
+      <% content_for :head do %>
+        <title>A simple page</title>
+      <% end %>
+
+      <p>Hello, Rails!</p>
+      ```
+
+      -> Generated HTMl:
+      ```
+      <html>
+        <head>
+          <title>A simple page</title>
+        </head>
+        <body>
+          <p>Hello, Rails!</p>
+        </body>
+      </html>
+      ```
+
+  ## 3.4 Using Partials ---
+
+    ### 3.4.1 Naming Partials 
+
+      -> In Rails, partials are reusable view templates that help avoid duplication and organize
+         our views efficiently. 
+      -> They are mainly used when a piece of HTML is repeated across multiple pages, such as
+         menus, sidebars, or comment sections.
+      
+      -> Partials are named with a leading underscore (_) to distinguish them from regular views.
+      -> However, when rendering a partial, we omit the underscore.
+
+      -> Let's say we have a menu that appears on every page.
+      ```
+      <%= render "menu" %>
+      ```
+
+      -> Naming Rule: The file starts with an underscore (_menu.html.erb).
+
+
+      -> If our partial is inside a different folder, specify the folder name.
+      -> Location: app/views/application/_menu.html.erb
+
+      ```
+      <%= render "application/menu" %>
+      ```
+      -> This will render the file app/views/application/_menu.html.erb.
+
+    
+    ### 3.4.2 Using Partials to Simplify Views
+
+      -> Partials in Rails help break down complex views into smaller, reusable components,
+         making the code more maintainable and readable.
+
+      ```
+      <%= render "application/ad_banner" %>
+
+      <h1>Products</h1>
+
+      <p>Here are a few of our fine products:</p>
+      <%# ... %>
+
+      <%= render "application/footer" %>
+      ```
+
+      -> <%= render "application/ad_banner" %>
+      -> This renders the _ad_banner.html.erb partial located in app/views/application/. 
+      -> It could contain an advertisement banner that appears on multiple pages.
+
+      -> <%= render "application/footer" %>
+      -> This includes the _footer.html.erb partial, which could be a common footer section
+         shared across different pages.
+
+      
+      -> There are two pages, users/index.html.erb and roles/index.html.erb, which have similar
+         search forms but with different input fields.
+
+        -> users/index.html.erb
+        ```
+        <%= render "application/search_filters", search: @q do |form| %>
+          <p>
+            Name contains: <%= form.text_field :name_contains %>
+          </p>
+        <% end %>
+        ```
+
+        -> roles/index.html.erb
+        ```
+        <%= render "application/search_filters", search: @q do |form| %>
+          <p>
+            Title contains: <%= form.text_field :title_contains %>
+          </p>
+        <% end %>
+        ```
+
+        -> Both views use the same partial (application/_search_filters.html.erb), but they pass
+           different form fields.
+
+        
+        -> application/_search_filters.html.erb
+
+        ```
+        <%= form_with model: search do |form| %>
+          <h1>Search form:</h1>
+          <fieldset>
+            <%= yield form %>
+          </fieldset>
+          <p>
+            <%= form.submit "Search" %>
+          </p>
+        <% end %>
+        ```
+
+        -> render "application/search_filters", search: @q do |form|
+          > This renders the _search_filters.html.erb partial and passes @q as the search 
+            parameter.
+          > The do |form| block captures the form object and allows customization inside each
+            view.
+        
+        -> <%= yield form %>
+          > yield acts as a placeholder inside the partial.
+          > It receives the block from render, which defines specific search field
+
+    
+
+
+    ### 3.4.3 Partial Layouts
+
+      -> Just like a full view can use a layout, partials can also have their own layouts. 
+      -> This is useful when you want to wrap a partial in some extra structure without modifying
+         the main layout.
+      
+      ```
+      <%= render partial: "link_area", layout: "graybar" %>
+      ```
+
+      -> The '_link_area.html.erb' partial will be rendered.
+      -> It will be wrapped inside the _graybar.html.erb layout.
+      -> The '_graybar.html.erb' layout will be in the same folder as '_link_area.html.erb'.
+
+
+
+    ### 3.4.4 Local Variables
+
+      -> Partials in Rails can receive local variables, allowing us to make them more flexible
+         and reusable. 
+      -> There are two main ways to pass local variables to a partial:
+
+      -> Using as: to Rename Collection Items
+        
+        -> When rendering a collection of objects, Rails automatically assigns each object to a
+           variable named after the partial. 
+        -> However, we can rename this variable using the as: option.
+
+        ```
+        <%= render partial: "product", collection: @products, as: :item %>
+        ```
+
+        -> This renders _product.html.erb for each @products item.
+        -> Instead of using the default variable (product), you can now access each product as
+           item inside the partial.
+
+        
+      -> Passing Custom Local Variables with locals:
+
+        -> We can also send additional local variables to a partial using locals:.
+
+        ```
+        <%= render partial: "product", collection: @products, 
+           as: :item, locals: { title: "Products Page" } %>
+        ```
+
+        -> title: "Products Page" creates a local variable title inside _product.html.erb.
+    
+
+    
+    ### 3.4.5 Counter Variables
+
+      -> When we render a collection in Rails, Rails automatically provides a counter variable to
+         keep track of how many times the partial has been rendered. 
+      -> This is useful for indexing items, adding numbering, or applying conditional styling.
+
+      -> If you render a collection of blog posts, Rails creates a counter variable named
+         blogpost_counter, starting from 0
+      
+      ```
+      <%= render partial: "blogpost", collection: @blogposts %>
+      ````
+
+      -> For each blog post in @blogposts, _blogpost.html.erb is rendered.
+
+
+      -> If you rename the collection variable using as:, the counter variable also changes.
+      ```
+      <%= render partial: "blogpost", collection: @blogposts, as: :article %>
+      ```
+
+      -> Now, inside _blogpost.html.erb, the counter variable will be article_counter instead of
+         blogpost_counter.
+
+      
+    
+
+    #### 3.4.6 Spacer Templates
+
+      ->A spacer template is a second partial that is rendered between each item in a collection. 
+      -> This is useful when you want to add dividers, separators, or extra content between items.
+
+      -> When you use the spacer_template: option, Rails will:
+        -> Render the main partial (_blogpost.html.erb) for each blog post in @blogposts.
+        -> Insert the spacer partial (_divider.html.erb) between each blog post.
+        -> The spacer partial does not receive data from the collection.
+
+
+      ```
+      <%= render partial: @blogposts, spacer_template: "divider" %>
+      ```
+
+      -> This renders _blogpost.html.erb for each blog post in @blogposts.
+      -> Between each blog post, _divider.html.erb will be inserted.
+
+
+    
+    ### 3.4.7 Collection Partial Layouts
+
+      -> When rendering a collection of items in Rails, we can wrap each item in a layout partial
+         using the layout: option. 
+      -> This helps we apply consistent structure or styling around each individual item in the 
+         collection.
+      
+      -> When using layout: "special_layout", Rails will:
+        > Render the main partial (e.g., _blogpost.html.erb) for each item in @blogposts.
+        > Wrap each blog post inside a layout partial (_special_layout.html.erb).
+        > Pass both the current object (blogpost) and the counter variable 'blogpost_counter' to
+          the layout.
+      
+      ```
+      <%= render partial: "blogpost", collection: @blogposts, layout: "post_wrapper" %>
+      ```
+
+      -> Each @blogpost is rendered using _blogpost.html.erb.
+      -> Each _blogpost.html.erb is wrapped inside _post_wrapper.html.erb.
+
+
+
+  
+
+  ## 3.5 Using Nested Layouts -----
+
+    -> In some cases, we need a slightly different layout for a specific controller but still
+       want to reuse most of the main layout. 
+    -> Instead of duplicating the entire layout, you can use nested layouts (sub-templates) to
+       extend the base layout and make small modifications.
+    
+    -> This is the default layout used by most of the application.
+    ```
+    <html>
+    <head>
+      <title><%= @page_title or "Page Title" %></title>
+      <%= stylesheet_link_tag "layout" %>
+      <%= yield :head %>
+    </head>
+    <body>
+      <div id="top_menu">Top menu items here</div>
+      <div id="menu">Menu items here</div>
+      <div id="content"><%= content_for?(:content) ? yield(:content) : yield %></div>
+    </body>
+    </html>
+    ```
+
+
+    --> Custom Layout for NewsController (news.html.erb)
+      -> Instead of replacing the whole layout, this layout:
+      -> Hides the top menu
+      -> Adds a right-side menu inside #content
+      -> Still inherits everything from application.html.erb
+    
+    ```
+    <% content_for :head do %>
+      <style>
+        #top_menu {display: none}  /* Hide the top menu */
+        #right_menu {float: right; background-color: yellow; color: black}
+      </style>
+    <% end %>
+
+    <% content_for :content do %>
+      <div id="right_menu">Right menu items here</div> <!-- Custom right menu -->
+      <%= content_for?(:news_content) ? yield(:news_content) : yield %>
+    <% end %>
+
+    <%= render template: "layouts/application" %>  <!-- Render the base layout -->
+    ```
+
+
+
+    -> The news.html.erb layout removes the top menu and adds a right menu.
+    -> The main content of news/index.html.erb is inserted into content_for :news_content.
+    -> Finally, news.html.erb renders application.html.erb, meaning it still includes most of the
+       original layout structure.
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,18 @@
+/* Blog Styling */
+.blog-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .blog-title {
+    color: #333;
+    font-size: 2rem;
+    text-align: center;
+  }
+  
+  .blog-content {
+    line-height: 1.6;
+    font-size: 1.2rem;
+  }
