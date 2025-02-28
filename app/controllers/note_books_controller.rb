@@ -20,7 +20,7 @@ class NoteBooksController < ApplicationController
       render :edit, status: :unprocessable_entity
     end
   end
-  
+
   private
 
   def note_book_params

@@ -1,8 +1,8 @@
 class BlogPostsController < ApplicationController
   before_action :set_blog_post, only: %i[ show edit update destroy ]
 
-  layout "blog_layout", except: [:index, :show]
-  
+  layout "blog_layout", except: [ :index, :show ]
+
   # GET /blog_posts or /blog_posts.json
   def index
     @blog_posts = BlogPost.all
