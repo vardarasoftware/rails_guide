@@ -1,6 +1,8 @@
 class BlogPostsController < ApplicationController
   before_action :set_blog_post, only: %i[ show edit update destroy ]
 
+  layout "blog_layout", except: [:index, :show]
+  
   # GET /blog_posts or /blog_posts.json
   def index
     @blog_posts = BlogPost.all
@@ -9,6 +11,13 @@ class BlogPostsController < ApplicationController
   # GET /blog_posts/1 or /blog_posts/1.json
   def show
     @blog_post = BlogPost.find(params[:id])
+    if @blog_post.featured?
+      render action: "featured_show"
+    end
+
+    if @blog_post.nil?
+      redirect_to blog_posts_path, alert: "Blog post not found!"
+    end
   end
 
   # GET /blog_posts/new
@@ -67,5 +76,9 @@ class BlogPostsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def blog_post_params
       params.fetch(:blog_post, {})
+    end
+
+    def blog_post_layout
+      current_user.admin? ? "admin_dashboard" : "blog_layout"
     end
 end
