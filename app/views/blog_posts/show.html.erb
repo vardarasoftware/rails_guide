@@ -12,6 +12,12 @@
   </div>
 <% end %>
 
+<% if @blog_post.present? %>
+  <p>Posted <%= time_ago_in_words(@blog_post.created_at) %> ago</p>
+<% else %>
+  <p>No post found</p>
+<% end %>
+
 <div>
   <%= link_to "Edit this blog post", edit_blog_post_path(@blog_post) %> |
   <%= link_to "Back to blog posts", blog_posts_path %>
