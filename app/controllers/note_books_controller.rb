@@ -5,6 +5,11 @@ class NoteBooksController < ApplicationController
 
   def new
     @note_book = NoteBook.new
+    @authors = Author.all.pluck(:first_name, :last_name, :id)
+    @categories = {
+      "Fiction" => [["Novel", "novel"], ["Poetry", "poetry"]],
+      "Non-Fiction" => [["Biography", "biography"], ["Science", "science"]]
+    }
   end
 
   def create
@@ -34,7 +39,16 @@ class NoteBooksController < ApplicationController
     end
   end
 
+  def destroy
+    @note_book.destroy
+    redirect_to note_books_path, notice: "NoteBook deleted successfully."
+  end
+
   private
+
+  def set_note_book
+    @note_book = NoteBook.find(params[:id])
+  end
 
   def note_book_params
     params.require(:note_book).permit(:title, :content, :author)

@@ -1,4 +1,17 @@
-<div>
-  <%= form.label :author %>
-  <%= form.text_field :author %>
-</div>
+<%= form_with model: @notebook do |form| %>
+    <%= form.label :title, "Notebook Title" %>
+    <%= form.text_field :title %>
+  
+    <%= form.label :author_id, "Select Author" %>
+    <%= form.select :author_id, @authors %>
+
+    <%= form.label :category, "Select Category" %>
+    <%= form.select :category, @categories %>
+    
+    <div>
+        <%= form.label :author %>
+        <%= form.text_field :author %>
+    </div>
+
+    <%= form.submit "Save Notebook" %>
+<% end %>
