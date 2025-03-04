@@ -1082,6 +1082,68 @@
 
 
 
+# 9 Performance */*/*/*/*
+
+  -> Rails provides benchmarking and fragment caching to improve performance by identifying
+     bottlenecks and reducing redundant computations.
+
+
+  ## 9.1 benchmark ----
+
+    -> Inside views, controllers, or helpers to measure the time taken for an expensive operation
+       we can use benchmark.
+    
+    ```
+    <% benchmark "Process data files" do %>
+      <%= expensive_files_operation %>
+    <% end %>
+    ```
+
+    -> Logs execution time in the Rails log like:
+    ```
+    Process data files (0.34523)
+    ```
+    -> Helps in identifying slow operations for optimization.
+
+  
+
+  ## 9.2 cache -----
+
+    -> Inside views to cache parts of the page (fragments) instead of caching the entire page.
+    -> Useful for menus, sidebars, repeated elements, or expensive database queries.
+
+
+    ```
+    <% cache do %>
+      <%= render "application/footer" %>
+    <% end %>
+    ```
+
+    -> The footer partial is stored in the cache.
+    -> On the next request, Rails serves it without re-rendering, improving speed.
+
+
+    -> Caching Each Article Individually
+
+    ```
+    <% @articles.each do |article| %>
+      <% cache article do %>
+        <%= render article %>
+      <% end %>
+    <% end %>
+    ```
+
+    -> Each article is cached separately.
+
+    -> If an article does not change, Rails serves it from the cache instead of querying the 
+       database.
+    ```
+    views/articles/index:bea67108094918eeba32cd4a6f786301/articles/1
+    ```
+
+    -> Each article has a unique cache key based on its ID and content.
+
+    
 
 
 
