@@ -79,6 +79,6 @@ class BlogPostsController < ApplicationController
     end
 
     def blog_post_layout
-      current_user.admin? ? "admin_dashboard" : "blog_layout"
+      current_user.admin? ? "admin_dashboard" : "blog_post_layout"
     end
 end

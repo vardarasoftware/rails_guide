@@ -913,7 +913,174 @@
     -> Useful when adding inline JavaScript in views.
 
 
+
+
+# 7 Alternative Tags */*/*/*/*
+
+  -> The Rails tag helper and the token_list or class_names helper are useful for generating 
+     dynamic HTML elements in a clean, programmatic way.
+
+  
+  ## 7.1 tag ----
+
+    -> The tag helper allows us to create HTML elements dynamically in Rails views without writing
+       raw HTML.
+
+    ```
+    tag.some_tag_name(optional content, options)
+    ```
+
+    -> some_tag_name → The HTML tag you want to generate (div, h1, section, etc.).
+    -> optional content → The inner text or content inside the tag.
+    -> options → A hash containing attributes for the tag (e.g., class, id, data-* attributes).
+
+
+    -> Examples:
+    ```
+    tag.h1 "All titles fit to print"
+    # => <h1>All titles fit to print</h1>
     
+    tag.div "Hello, world!"
+    # => <div>Hello, world!</div>
+    ```
+
+    -> Adding Attributes:
+      -> we can pass attributes like class, id, etc.
+
+      ```
+      tag.section class: %w(kitties puppies)
+      # => <section class="kitties puppies"></section>
+      ```
+
+    -> Adding data-* Attributes:
+    ```
+    tag.div data: { user_id: 123 }
+    # => <div data-user-id="123"></div>
+    ```
+
+  
+  ## 7.2 token_list ----
+
+    -> This helper generates a space-separated string from multiple arguments. 
+    -> It is commonly used for CSS class names.
+
+    ```
+    token_list(value1, value2, ...)
+
+    or using its alias:
+
+    class_names(value1, value2, ...)
+    ```
+
+    -> It filters out nil, false, and empty values ("").
+    -> Hashes ({}) are converted based on truthy values.
+
+
+    -> Example
+    ```
+    token_list("cats", "dogs")
+    # => "cats dogs"
+
+    token_list(nil, false, 123, "", "foo", { bar: true })
+    # => "123 foo bar"
+
+    mobile, alignment = true, "center"
+    token_list("flex items-#{alignment}", "flex-col": mobile)
+    # => "flex items-center flex-col"
+    class_names("flex items-#{alignment}", "flex-col": mobile) # using the alias
+    # => "flex items-center flex-col"
+    ```
+
+
+
+# 8 Capture Blocks */*/*/*/*
+
+  -> Capture blocks help store dynamically generated content and reuse it in layouts or other
+     parts of your views.
+  
+
+  ## 8.1 capture ----
+
+    -> The capture method stores a block of content in a variable, which can be used later in a
+       template, layout, or helper.
+
+    -> Example: Storing Content in a Variable
+    -> Before (Direct HTML in View)
+    ```
+    <p>Welcome! The date and time is <%= Time.current %></p>
+    ```
+
+    -> After (Using capture)
+    ```
+    <% @greeting = capture do %>
+      <p>Welcome! The date and time is <%= Time.current %></p>
+    <% end %>
+
+
+    <html>
+      <head><title>Welcome!</title></head>
+      <body>
+        <%= @greeting %>
+      </body>
+    </html>
+    ```
+
+    -> It stores the content inside a variable (@greeting), so you can reuse it anywhere.
+    -> The block inside capture returns a string, allowing you to manipulate it or conditionally
+       render it.
+
+    
+
+  ## 8.2 content_for ----
+
+    -> The content_for method stores a block of content under a specific identifier, 
+       so it can be used later.
+
+    -> Instead of hardcoding the title inside the layout:
+    ```
+    <title>My App</title>
+    ```
+
+    -> we can define the title dynamically in our views and use it in the layout.
+    
+    -> Define Content in the View: 
+    ```
+    <% content_for(:html_title) { "Special Page Title" } %>
+    ```
+
+    -> Here, "Special Page Title" is stored in content_for(:html_title).
+
+    -> Use it in the Layout: 
+    ```
+    <html>
+      <head>
+        <title><%= content_for?(:html_title) ? yield(:html_title) : "Default Title" %></title>
+      </head>
+    </html>
+    ```
+
+    
+
+    -> we can define a helper to make things more reusable.
+
+    ```
+    module TitleHelper
+      def html_title
+        content_for(:html_title) || "Default Title"
+      end
+    end
+    ```
+
+    -> Use it in Layout
+    ```
+    <title><%= html_title %></title>
+    ```
+
+    -> Now, every page will: Use content_for(:html_title) if it's set.
+    -> Otherwise, use "Default Title".
+
+
+
 
 
 
