@@ -1,11 +1,16 @@
 class BlogPostsController < ApplicationController
   before_action :set_blog_post, only: %i[ show edit update destroy ]
 
-  layout "blog_layout", except: [ :index, :show ]
+  layout "blog_post_layout", except: [ :index, :show ]
 
   # GET /blog_posts or /blog_posts.json
   def index
     @blog_posts = BlogPost.all
+
+    respond_to do |format|
+      format.html
+      format.atom
+    end
   end
 
   # GET /blog_posts/1 or /blog_posts/1.json
@@ -79,6 +84,6 @@ class BlogPostsController < ApplicationController
     end
 
     def blog_post_layout
-      current_user.admin? ? "admin_dashboard" : "blog_layout"
+      current_user.admin? ? "admin_dashboard" : "blog_post_layout"
     end
 end

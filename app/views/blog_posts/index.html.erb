@@ -2,6 +2,12 @@
 
 <h1>Blog posts</h1>
 
+<% @welcome_message = capture do %>
+  <p>Welcome! Today’s date is <%= Time.current.strftime("%Y-%m-%d") %></p>
+<% end %>
+
+<%= @welcome_message %>  <%# Displays stored content %>
+
 <%= link_to "New blog post", new_blog_post_path %>
 
 <% @blog_posts.each do |post| %>
