@@ -3,15 +3,38 @@
       <%= form.label :title %>
       <%= form.text_field :title %>
     </div>
+
     <div>
       <%= form.label :author %>
       <%= form.text_field :author %>
     </div>
+
     <div>
       <%= form.label :content %>
       <%= form.text_field :content %>
     </div>
+
+    <div>
+        <%= form.label :published_date, "Published Date" %>
+        <%= form.date_select :published_date %>
+    </div>
+
+    <div>
+        <%= form.label :reminder_time, "Reminder Time" %>
+        <%= form.time_select :reminder_time, minute_step: 5 %>
+    </div>
+
+    <div>
+        <%= form.label :last_edited_at, "Last Edited At" %>
+        <%= form.datetime_select :last_edited_at %>
+    </div>
+
+    <div>
+        <%= form.label :time_zone, "Time Zone" %>
+        <%= form.time_zone_select :time_zone %>
+    </div>
+
     <%= form.submit "Create Notebook" %>
-  <% end %>
+<% end %>
 
 <%= link_to "Back", note_books_path %>
