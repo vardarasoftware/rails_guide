@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_28_073127) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_04_080626) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -275,6 +275,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_28_073127) do
     t.text "content"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "author"
   end
 
   create_table "notifications", force: :cascade do |t|

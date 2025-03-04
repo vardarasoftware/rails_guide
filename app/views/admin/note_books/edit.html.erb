@@ -1,0 +1,20 @@
+<h1>Edit NoteBook</h1>
+
+<%= form_with model: [:admin, @note_book] do |form| %>
+  <div>
+    <%= form.label :title %>
+    <%= form.text_field :title %>
+  </div>
+
+  <div>
+    <%= form.label :content %>
+    <%= form.text_area :content %>
+  </div>
+
+  <div>
+    <%= form.label :author %>
+    <%= form.text_field :author %>
+  </div>
+
+  <%= form.submit "Update NoteBook" %>
+<% end %>

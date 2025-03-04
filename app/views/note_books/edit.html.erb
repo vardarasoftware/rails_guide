@@ -12,8 +12,18 @@
   </div>
 
   <div>
+    <%= form.label :author %>
+    <%= form.text_area :author %>
+  </div>
+
+  <div>
     <%= form.submit "Update NoteBook" %>
   </div>
+
+  <div>
+    <%= form.submit "Delete NoteBook", data: { confirm: "Are you sure?" } %>
+  </div>
+
 <% end %>
 
 <%= link_to "Back", note_books_path %>
