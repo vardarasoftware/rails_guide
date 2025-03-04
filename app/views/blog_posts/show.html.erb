@@ -1,6 +1,7 @@
 <p style="color: green"><%= notice %></p>
 
 <%= render partial: "blog_post", locals: { blog_post: @blog_post } %>
+
 <h1>Blog Post Details</h1>
 
 <%= render layout: "box", locals: { blog_post: @blog_post } do %>
@@ -13,10 +14,10 @@
   <%= image_tag("default_image.png", alt: "Default Image", class: "blog-image") %>
 <% end %>
 
-  <div>
-    <h2><%= blog_post.title %></h2>
-    <p><%= blog_post.body %></p>
-  </div>
+<div>
+  <h2><%= @blog_post.title %></h2>
+  <p><%= @blog_post.content %></p>
+</div>
 
 <% if @blog_post.present? %>
   <p>Posted <%= time_ago_in_words(@blog_post.created_at) %> ago</p>
@@ -30,3 +31,12 @@
 
   <%= button_to "Destroy this blog post", @blog_post, method: :delete %>
 </div>
+
+<button onclick="showAlert()">Show Blog Content</button>
+
+<%= javascript_tag do %>
+  function showAlert() {
+    var blogContent = "<%= escape_javascript(@blog_post.content) %>";
+    alert(blogContent);
+  }
+<% end %>

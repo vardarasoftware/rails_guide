@@ -831,6 +831,89 @@
 
 
 
+# 6 JavaScript */*/*/*/*
+
+  ## 6.1 escape_javascript ------
+
+    -> This method is used to escape special characters in JavaScript strings, such as carriage 
+       returns (\n), single quotes ('), and double quotes ("). 
+    -> The purpose is to ensure that a string is safely embedded inside JavaScript code without 
+       causing syntax errors.
+
+    -> Consider an ERB partial (app/views/users/greeting.html.erb) that contains the following text:
+
+    ```
+    My name is <%= current_user.name %>, and I'm here to say "Welcome to our website!"
+    ```
+
+    -> If current_user.name = "John", then the rendered text would be:
+    ```
+    My name is John, and I'm here to say "Welcome to our website!"
+    ```
+
+    -> Now, suppose we want to use this text inside a JavaScript alert. If we insert it directly, 
+       the quotes could break the JavaScript string. 
+    -> To prevent this, we use escape_javascript:
+
+    ```
+    <script>
+      var greeting = "<%= escape_javascript render('users/greeting') %>";
+      alert(`Hello, ${greeting}`);
+    </script>
+    ```
+
+    -> How It Works:
+      -> escape_javascript render('users/greeting') ensures that any special characters are 
+         escaped properly.
+      -> Without escaping, the JavaScript code might break if the text contains quotes.
+      -> The resulting JavaScript string is now safe to use in the script.
+
+  
+  ## 6.2 javascript_tag -----
+
+    -> This helper generates a <script> tag around the provided JavaScript code.
+
+    -> Passing JavaScript Code as an Argument
+    ```
+    <%= javascript_tag("alert('All is good')", type: "application/javascript") %>
+    ```
+
+    -> This generates html: 
+    ```
+    <script type="application/javascript">
+    //<![CDATA[
+    alert('All is good')
+    //]]>
+    </script>
+    ```
+
+    -> The <script> tag is generated automatically.
+    -> The //<![CDATA[ ... //]]> wrapper is used to prevent issues with older XHTML-based browsers.
+    -> The type="application/javascript" attribute ensures that the script is recognized as 
+       JavaScript.
+    
+
+    -> Using a Block
+    -> Instead of passing a string, we can also pass a block:
+
+    ```
+    <%= javascript_tag type: "application/javascript" do %>
+      alert("Welcome to my app!")
+    <% end %>
+    ```
+
+    -> This will output:
+    ```
+    <script type="application/javascript">
+      alert("Welcome to my app!")
+    </script>
+    ````
+
+    -> The block version is cleaner and allows for multi-line JavaScript code.
+    -> Useful when adding inline JavaScript in views.
+
+
+    
 
 
 

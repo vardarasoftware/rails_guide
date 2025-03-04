@@ -7,6 +7,6 @@ class BlogPost < ApplicationRecord
     end
 
     def image_url
-        super.presence || "default_image.png"
+        self[:image_url].presence || "default_image.png"
     end
 end
