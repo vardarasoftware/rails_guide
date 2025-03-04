@@ -1143,8 +1143,92 @@
 
     -> Each article has a unique cache key based on its ID and content.
 
+
+
+
+
+# 10 Miscellaneous */*/*/*/*
+
+  ## 10.1 atom_feed -----
+
+    -> We can use atom_feed when we want to provide an RSS-style feed for our website's content.
+    
+    -> Define Routes
+    ```
+    resources :articles
+    ```
+    -> This ensures that articles/index can respond to different formats like HTML and Atom.
+
+
+    -> Modify the Controller to Handle Atom Requests
+
+    ```
+    def index
+      @articles = Article.all
+
+      respond_to do |format|
+        format.html  # Normal HTML page
+        format.atom  # Atom feed
+      end
+    end
+    ```
+
+    -> When a request is made with .atom, Rails will return an Atom XML feed instead of an 
+       HTML page.
     
 
+    -> Create the Atom Builder View
+
+    ```
+    atom_feed do |feed|
+      feed.title("Latest Articles")
+      feed.updated(@articles.first.created_at)
+
+      @articles.each do |article|
+        feed.entry(article) do |entry|
+          entry.title(article.title)
+          entry.content(article.body, type: "html")
+
+          entry.author do |author|
+            author.name(article.author_name)
+          end
+        end
+      end
+    end
+    ```
+
+    -> This creates an Atom XML feed with: Title of the feed, Timestamp of the last updated
+       article
+    -> Entries for each article, including title, content, and author name.
+
+
+  ## 10.2 debug ----
+
+    -> we can use debug when we want to see the structure of a variable in a readable format.
+
+    -> Debugging an Array of Hashes
+    ```
+    <% my_hash = { "first" => 1, "second" => "two", "third" => [1, 2, 3] } %>
+    <%= debug my_hash %>
+    ```
+
+    -> render output html:
+    ```
+    <pre class="debug_dump">
+    ---
+    first: 1
+    second: two
+    third:
+    - 1
+    - 2
+    - 3
+    </pre>
+    ```
+
+    -> The debug helper formats the hash into YAML and wraps it inside a <pre> tag for better
+       readability.
+
+    
 
 
 
