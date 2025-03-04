@@ -280,4 +280,571 @@
 
 
 
+# 3 Navigation */*/*/*/*
+
+  -> Rails Navigation Helpers make it easier to generate URLs and links dynamically based on 
+     our application's routing system. 
+  -> Instead of manually writing URLs, these helpers automatically generate correct paths based 
+     on controllers, actions, and models.
+
+  
+  ## 3.1 button_to ----
+
+    -> This method generates a form with a submit button that sends a request to the specified URL.
+
+    ```
+    <%= button_to "Sign in", sign_in_path %>
+    ```
+
+    -> Generated HTML:
+    ```
+    <form method="post" action="/sessions" class="button_to">
+      <input type="submit" value="Sign in" />
+    </form>
+    ```
+
+    -> Why use button_to instead of link_to?
+      -> Useful for performing POST, DELETE, or PATCH requests.
+      -> Automatically protects against CSRF attacks.
+    
+
+  
+  ## 3.2 current_page? ---
+
+    -> This method checks whether the current URL matches a given controller and action.
+
+    ```
+    <% if current_page?(controller: 'profiles', action: 'show') %>
+      <strong>Currently on the profile page</strong>
+    <% end %>
+    ```
+
+    -> When to use it?
+      -> Highlight the current page in navigation menus.
+      -> Show a different UI when a user is on a specific page.
+
+  
+
+  ## 3.3 link_to ---
+
+    -> Generates a clickable hyperlink (<a> tag) to a given URL.
+
+    ```
+    <%= link_to "Profile", @profile %>
+    ```
+
+    -> Generated HTML:
+    ```
+    <a href="/profiles/1">Profile</a>
+    ```
+
+
+    -> link_to "Profiles", profiles_path
+    
+    ```
+    # => <a href="/profiles">Profiles</a>
+
+    link_to "Articles", articles_path, class: "article__container", id: "articles"
+    # => <a href="/articles" class="article__container" id="articles">Articles</a>
+
+    link_to "Visit Google", "https://google.com"
+    # => <a href="https://google.com">Visit Google</a>
+    ```
+
+    -> Advantages of link_to:
+      -> Automatically generates the correct URL.
+      -> Supports CSS classes, HTML attributes, and dynamic paths.
+    
+    -> Using a Block
+    
+    ```
+    <%= link_to @profile do %>
+      <strong><%= @profile.name %></strong> -- <span>Check it out!</span>
+    <% end %>
+    ```
+
+    -> Generated HTML:
+
+    ```
+    <a href="/profiles/1">
+      <strong>David</strong> -- <span>Check it out!</span>
+    </a>
+    ```
+
+    -> Why use the block syntax? ---> Allows for more complex link content.
+
+  
+  
+  ## 3.4 mail_to ---
+
+    -> Creates an email link (mailto:) so users can click to send an email.
+
+    ```
+    <%= mail_to "john_doe@gmail.com" %>
+    ```
+
+    -> Generated HTML:
+    ```
+    <a href="mailto:john_doe@gmail.com">john_doe@gmail.com</a>
+    ```
+
+
+    -> With Subject & CC:
+
+    ```
+    mail_to "me@john_doe.com", cc: "me@jane_doe.com", subject: "Hello!"
+    ```
+
+    -> Generated HTML:
+
+    ```
+    <a href="mailto:me@john_doe.com?cc=me@jane_doe.com&subject=Hello!">me@john_doe.com</a>
+    ```
+
+    -> Why use mail_to?
+      -> Automatically encodes emails to prevent spam bots from scraping addresses.
+      -> Supports custom subjects, CC, and BCC.
+
+
+
+  ## 3.5 url_for ---
+
+    -> Generates a URL string for a given model, controller, or set of parameters.
+
+    ```
+    url_for(@profile)
+    ```
+
+    -> Output:
+    ```
+    /profiles/1
+    ```
+
+    -> With Nested Resources:
+
+    ```
+    url_for([@hotel, @booking, page: 2, line: 3])
+    ```
+
+    -> Output:
+    ```
+    /hotels/1/bookings/1?line=3&page=2
+    ```
+
+    -> Why use url_for?
+      -> Used when you only need the URL, not a clickable link.
+      -> Great for APIs, redirects, and dynamic path generation.
+
+
+
+# 4 Sanitization */*/*/*
+
+  -> Sanitization in Rails helps remove unwanted or potentially dangerous HTML/CSS from user input
+     before displaying it in views. 
+  -> This prevents Cross-Site Scripting (XSS) attacks and ensures that only safe content is shown.
+
+
+  ## 4.1 sanitize ----
+
+    -> The sanitize method removes all disallowed HTML tags and attributes from the input.
+
+    ```
+    <%= sanitize @article.body %>
+    ```
+
+    -> If @article.body contains:
+    ```
+    <script>alert("Hacked!");</script> <b>Bold Text</b>
+    ```
+    
+    -> Output:
+    ```
+    <b>Bold Text</b>
+    ```
+
+    -> Result: <script> tag is removed, but <b> is allowed.
+  
+
+  ## 4.2 sanitize_css ----
+
+    -> Used to remove unsafe styles from user-generated CSS.
+
+    ```
+    sanitize_css("background-color: red; color: white; font-size: 16px;")
+    ```
+
+    -> If sanitize_css removes any unsafe styles, only the safe ones remain.
+    -> Prevents users from injecting malicious CSS, like display:none.
+
+
+  
+  ## 4.3 strip_links ----
+
+    -> Removes anchor (<a>) tags but keeps the link text.
+
+    -> Example: Remove Links but Keep Text
+    ```
+    <%= strip_links("<a href='https://rubyonrails.org'>Ruby on Rails</a>") %>
+    ```
+
+    -> Output:
+    ```
+    Ruby on Rails
+    ```
+
+    -> Example: Remove Email Links
+    
+    ```
+    <%= strip_links("emails to <a href='mailto:me@email.com'>me@email.com</a>.") %>
+    ```
+
+    -> Output:
+    ```
+    emails to me@email.com.
+    ```
+    -> Useful when displaying user-generated text where links should not be clickable.
+
+
+
+  
+  ##  4.4 strip_tags ----
+
+    -> Removes all HTML tags, leaving only plain text.
+
+    -> Example: Strip All Tags
+    ```
+    <%= strip_tags("Strip <i>these</i> tags!") %>
+    ```
+
+    -> Output:
+    ```
+    Strip these tags!
+    ```
+
+    Example: Clean Up Malformed Links
+
+    ```
+    <%= strip_tags("<b>Bold</b> no more! <a href='more.html'>See more</a>") %>
+    ```
+
+    -> Output:  
+    ```
+    Bold no more! See more
+    ```
+
+    -> Use Case:
+    -> When extracting plain text from rich HTML content.
+    -> When preventing HTML injection attacks.
+
+
+
+
+# 5 Assets */*/*/*/*/*
+
+  -> Rails provides helper methods to easily include assets.
+  -> These helpers generate correct URLs for assets, even if they are hosted on a separate asset 
+     server.
+
+  -> By default, Rails serves assets from the public folder. However, for performance and caching,
+     we can use a dedicated asset server.
+
+  -> Example: Setting Up an Asset Host
+    -> In config/environments/production.rb:
+
+  ```
+  config.asset_host = "assets.example.com"
+  ```
+
+  -> Now, image_tag("rails.png") will generate:
+
+  ```
+  <img src="//assets.example.com/images/rails.png" />
+  ```
+
+  -> This improves performance by offloading assets to a CDN or separate server.
+
+
+  ## 5.1 audio_tag ----
+
+    -> Generates an <audio> tag with one or more sources.
+
+    -> Example: Single Audio Source
+    ```
+    <%= audio_tag("sound") %>
+    ```
+    -> Output:
+    ```
+    <audio src="/audios/sound"></audio>
+    ```
+
+    -> Rails assumes the file is in public/audios/.
+
+    -> Example: Multiple Audio Formats (For Browser Compatibility)
+    ```
+    <%= audio_tag("sound.wav", "sound.mid") %>
+    ```
+
+    -> Output:
+    ```
+    <audio>
+      <source src="/audios/sound.wav" />
+      <source src="/audios/sound.mid" />
+    </audio>
+    ```
+
+    -> Example: Adding Controls
+    ```
+    <%= audio_tag("sound", controls: true) %>
+    ```
+
+    -> Output:
+    ```
+    <audio controls="controls" src="/audios/sound"></audio>
+    ```
+    
+    -> Embed background music, podcasts, or sound effects.
+
+  
+
+  ## 5.2 auto_discovery_link_tag ----
+
+    -> Generates <link> tags for RSS, Atom, or JSON feeds, allowing browsers and feed readers to
+       auto-detect your site's feeds.
+
+    -> Example: RSS Feed Link
+    ```
+    <%= auto_discovery_link_tag(:rss, "http://www.example.com/feed.rss", { title: "RSS Feed" }) %>
+    ```
+
+    -> Output:
+    ```
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="http://www.example.com/feed.rss" />
+    ```
+
+    -> If you have a blog or news section, browsers can automatically detect and subscribe to our 
+       feed.
+
+    
+  
+  ## 5.3 favicon_link_tag -----
+
+    -> Generates a <link> tag for the favicon of your site.
+
+    -> Example: Default Usage
+    ```
+    <%= favicon_link_tag %>
+    ```
+
+    -> Output:
+    ```
+    <link href="/assets/favicon.ico" rel="icon" type="image/x-icon" />
+    ```
+    
+    -> Looks for favicon.ico in the assets directory.
+
+    -> Example: Custom Favicon
+    ```
+    <%= favicon_link_tag "custom_icon.png" %>
+    ```
+
+    -> Output:
+    ```
+    <link href="/assets/custom_icon.png" rel="icon" type="image/png" />
+    ```
+
+    -> Helps users quickly recognize your website in browser tabs.
+
+  
+  ## 5.4 image_tag ----
+
+    -> Generates an <img> tag with the correct asset path.
+
+    -> Example: Basic Image
+    ```
+    <%= image_tag("icon.png") %>
+    ```
+
+    -> Output:
+    ```
+    <img src="/assets/icon.png" />
+    ```
+
+    -> Rails looks for icon.png in app/assets/images/.
+
+    -> Example: Adding Size and Alt Text
+    ```
+    <%= image_tag("icon.png", size: "16x10", alt: "Edit Article") %>
+    ```
+    
+    -> Output:
+    ```
+    <img src="/assets/icon.png" width="16" height="10" alt="Edit Article" />
+    ```
+
+    -> Displaying logos, icons, and user profile pictures.
+
+  
+  ##  5.5 javascript_include_tag ----
+
+    -> Generates <script> tags for JavaScript files.
+
+    -> Example: Basic JavaScript File
+    ```
+    <%= javascript_include_tag("common") %>
+    ```
+
+    -> Output:
+    ```
+    <script src="/assets/common.js"></script>
+    ```
+
+    -> Rails looks for common.js in app/assets/javascripts/.
+
+    -> Example: Async JavaScript Loading
+    ```
+    <%= javascript_include_tag("common", async: true) %>
+    ```
+
+    -> Output:
+    ```
+    <script src="/assets/common.js" async="async"></script>
+    ```
+
+    -> async allows the script to load without blocking page rendering.
+    -> Loading interactive JavaScript functionality like menus and animations.
+
+
+  ## 5.6 picture_tag -----
+
+    -> Generates a <picture> tag, allowing different image formats for different browsers.
+
+    -> Example: Providing Multiple Image Formats
+    ```
+    <%= picture_tag("icon.webp", "icon.png") %>
+    ```
+
+    -> Output:
+    ```
+    <picture>
+      <source srcset="/assets/icon.webp" type="image/webp" />
+      <source srcset="/assets/icon.png" type="image/png" />
+      <img src="/assets/icon.png" />
+    </picture>
+    ```
+
+    -> Optimizing images for performance by providing modern formats.
+
+
+  
+  ## 5.7 preload_link_tag -----
+
+    -> Helps browsers load assets early for better performance.
+
+    -> Example: Preloading a CSS File
+    ```
+    <%= preload_link_tag("application.css") %>
+    ```
+
+    -> Output:
+    ```
+    <link rel="preload" href="/assets/application.css" as="style" type="text/css" />
+    ```
+
+    -> Ensuring critical CSS or fonts load as soon as possible.
+
+
+
+  ## 5.8 stylesheet_link_tag -----
+
+    -> Generates <link> tags for CSS files.
+
+    -> Example: Basic Stylesheet Link
+    ```
+    <%= stylesheet_link_tag("application") %>
+    ```
+
+    -> Output:
+    ```
+    <link href="/assets/application.css" rel="stylesheet" />
+    ```
+
+    -> Rails looks for application.css in app/assets/stylesheets/.
+
+    -> Example: Specifying Media Type
+    ```
+    <%= stylesheet_link_tag("application", media: "all") %>
+    ```
+
+    -> Output:
+    ```
+    <link href="/assets/application.css" media="all" rel="stylesheet" />
+    ```
+
+    -> media="all" means the CSS applies to all screen types.
+    -> Styling the website with custom or external CSS.
+
+
+  
+  ## 5.9 video_tag ----
+
+    -> Generates a <video> tag for videos.
+
+    -> Example: Basic Video
+    ```
+    <%= video_tag("trailer") %>
+    ```
+
+    -> Output:
+    ```
+    <video src="/videos/trailer"></video>
+    ```
+
+    -> Rails looks for trailer in public/videos/.
+
+    -> Example: Multiple Video Formats
+
+    ```
+    <%= video_tag(["trailer.ogg", "trailer.flv"]) %>
+    ```
+
+    -> Output:
+    ```
+    <video>
+      <source src="/videos/trailer.ogg" />
+      <source src="/videos/trailer.flv" />
+    </video>
+    ```
+
+    -> Example: Adding Controls
+
+    ```
+    <%= video_tag("trailer", controls: true) %>
+    ```
+
+    -> Output:
+    ```
+    <video controls="controls" src="/videos/trailer"></video>
+    ```
+
+    -> Embedding tutorials, product demos, or background videos.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

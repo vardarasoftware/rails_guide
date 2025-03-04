@@ -1,16 +1,22 @@
 <p style="color: green"><%= notice %></p>
 
-<%= render @blog_post %>
+<%= render partial: "blog_post", locals: { blog_post: @blog_post } %>
 <h1>Blog Post Details</h1>
 
-<%= render partial: "blog_post", locals: { blog_post: @blog_post } %>
-<%= render partial: "blog_post", locals: { blog_post: @blog_post, theme: "dark" } %>
-<%= render(layout: "box", locals: { blog_post: @blog_post }) do %>
+<%= render layout: "box", locals: { blog_post: @blog_post } do %>
+  <%= render partial: "blog_post", locals: { blog_post: @blog_post } %>
+<% end %>
+
+<% if @blog_post.image_url.present? %>
+  <%= image_tag(@blog_post.image_url, alt: @blog_post.title, class: "blog-image") %>
+<% else %>
+  <%= image_tag("default_image.png", alt: "Default Image", class: "blog-image") %>
+<% end %>
+
   <div>
     <h2><%= blog_post.title %></h2>
     <p><%= blog_post.body %></p>
   </div>
-<% end %>
 
 <% if @blog_post.present? %>
   <p>Posted <%= time_ago_in_words(@blog_post.created_at) %> ago</p>
