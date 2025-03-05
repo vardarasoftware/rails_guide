@@ -1131,7 +1131,612 @@
     -> uploaded_file.read → Reads file contents.
     -> CSV.parse(..., headers: true) → Parses the file with headers.
     -> Reads CSV rows and saves them as records in the database.
+
+
+
+
+
+# 7 Customizing Form Builders */*/*/*/*
+
+  -> Form builders in Rails help generate form elements tied to a model. 
+  -> we can customize them to add reusable form elements across your application.
+
+  ->  Why Customize Form Builders?
+    > Reduces Repetition: Instead of writing the same label and text field multiple times, 
+      we can create a helper.
+    > Improves Readability: Code becomes cleaner and easier to maintain.
+    > Allows Custom Styling: we can enforce specific form structures or styles globally.
+
+  
+  -> Imagine we always want to display a text field with a label. 
+  -> Instead of repeating this:
+    ```
+    <%= form.label :first_name %>
+    <%= form.text_field :first_name %>
+    ```
+  
+  -> we can create a helper method in application_helper.rb:
+    ```
+    module ApplicationHelper
+      def text_field_with_label(form, attribute)
+        form.label(attribute) + form.text_field(attribute)
+      end
+    end
+    ```
+
+  -> Now, in our form:
+    ```
+    <%= form_with model: @person do |form| %>
+      <%= text_field_with_label form, :first_name %>
+    <% end %>
+    ```
+
+  -> This simplifies our form structure while keeping the same functionality.
+
+
+  -> Instead of using a helper, we can subclass ActionView::Helpers::FormBuilder to override form
+     methods.
+
+    ```
+    class LabellingFormBuilder < ActionView::Helpers::FormBuilder
+      def text_field(attribute, options = {})
+        label(attribute) + super
+      end
+    end
+    ```
+
+  -> super calls the original text_field method.
+  -> label(attribute) + super ensures every text field automatically includes a label.
+
+
+  -> Use Custom Builder in Forms
+    ```
+    <%= form_with model: @person, builder: LabellingFormBuilder do |form| %>
+      <%= form.text_field :first_name %>
+    <% end %>
+    ```
+  -> No need to manually add labels!
+  
+
+  -> Instead of specifying the builder every time, create a helper that applies it automatically.
+
+  -> Define labeled_form_with in ApplicationHelper
+    ```
+    module ApplicationHelper
+      def labeled_form_with(**options, &block)
+        options[:builder] = LabellingFormBuilder
+        form_with(**options, &block)
+      end
+    end
+    ```
+
+  -> Use It in our Views
+    ```
+    <%= labeled_form_with model: @person do |form| %>
+      <%= form.text_field :first_name %>
+    <% end %>
+    ```
+
+  
+  -> Even shorter syntax with the same automatic label feature!
+
+
+  -> When rendering a form builder inside a partial:
+
+    ```
+    <%= render partial: f %>
+    ```
+
+  -> If f is a default form builder (ActionView::Helpers::FormBuilder), it will render form 
+     partial.
+  -> If f is LabellingFormBuilder, it will render the labelling_form partial instead.
+
+
+
+
+
+
+
+# 8 Form Input Naming Conventions and params Hash */*/*/*/*
+
+  -> When a user submits a form in Rails, the values they entered are sent as a params hash to
+     the controller. 
+  -> This allows us to access user input and process it accordingly.
+  -> HTML forms don’t inherently have structured data. 
+  -> They only send name-value pairs.
+  -> Rails interprets these names into structured hashes and arrays.
+
+
+  -> Forms send data as name-value pairs, but Rails structures them using naming conventions.
+  -> If you use form_with model: @object, inputs are nested inside params[:object].
+  -> Check boxes automatically become arrays inside params.
+  -> When handling multiple associated records, fields_for creates an array of hashes.
+
+
+  ## 8.1 Basic Structure -*-*-*-*
+
+    -> A hash structure in Rails mimics object attributes.
+    -> Each input field uses the name attribute to specify where the data will go in the params
+       hash.
     
+    ```
+    <input id="person_name" name="person[name]" type="text" value="Henry"/>
+    ```
+
+    -> Resulting params Hash
+      ```
+      { "person" => { "name" => "Henry" } }
+      ```
+    
+    -> How to Access It in the Controller
+      ```
+      params[:person][:name]  # => "Henry"
+      ```
+    
+    -> Since the input name is person[name], Rails automatically nests it inside params[:person].
+
+
+
+    -> we can nest hashes to group related fields together
+    
+    ```
+    <input id="person_address_city" name="person[address][city]" type="text" value="New York"/>
+    ```
+
+    -> Resulting params Hash
+    ```
+    { "person" => { "address" => { "city" => "New York" } } }
+    ```
+
+
+    -> How to Access It in the Controller
+    ```
+    params[:person][:address][:city]  # => "New York"
+    ```
+
+    -> This helps structure complex forms with multiple related attributes.
+
+
+
+    -> If multiple fields share the same name with square brackets ([]) at the end, Rails collects them into an array.
+
+    -> Example: Multiple Phone Numbers
+
+    ```
+    <input name="person[phone_number][]" type="text" value="555-0123"/>
+    <input name="person[phone_number][]" type="text" value="555-0124"/>
+    <input name="person[phone_number][]" type="text" value="555-0125"/>
+    ```
+
+    -> Resulting params Hash
+    ```
+    {
+      "person" => {
+        "phone_number" => ["555-0123", "555-0124", "555-0125"]
+      }
+    }
+    ```
+
+
+    -> How to Access It in the Controller
+    ```
+    params[:person][:phone_number]  # => ["555-0123", "555-0124", "555-0125"]
+    ```
+
+    -> Using [] tells Rails to treat it as an array, so multiple values are stored together.
+
+  
+
+  ## 8.2 Combining Arrays and Hashes -*-*-*-*
+
+    -> A hash can have keys where the values are arrays.
+    -> For example, in a form submission, the params[:person] hash might contain a key
+       :phone_numbers whose value is an array:
+
+    ```
+    params[:person] = {
+      name: "John Doe",
+      phone_numbers: ["123-456-7890", "987-654-3210"]
+    }
+    ```
+
+    -> So, params[:person][:phone_numbers] is an array of phone numbers.
+
+
+    -> we can also store an array of hashes, where each element is a hash containing multiple
+       key-value pairs.
+    ```
+    <input name="person[addresses][][line1]" type="text"/>
+    <input name="person[addresses][][line2]" type="text"/>
+    <input name="person[addresses][][city]" type="text"/>
+    <input name="person[addresses][][line1]" type="text"/>
+    <input name="person[addresses][][line2]" type="text"/>
+    <input name="person[addresses][][city]" type="text"/>
+    ```
+
+    -> Here, addresses is an array, and each entry in it is a hash with keys line1, line2, and
+       city.
+    -> When this form is submitted, Rails will structure the parameters like this:
+      ```
+      params[:person] = {
+        addresses: [
+          { line1: "1000 Fifth Avenue", line2: "", city: "New York" },
+          { line1: "Calle de Ruiz de Alarcón", line2: "", city: "Madrid" }
+        ]
+      }
+      ```
+
+    -> Here, params[:person][:addresses] is an array of hashes, where each hash represents a 
+       separate address.
+
+
+  
+
+  ## 8.3 Hashes with an Index -*-*-*-*
+
+    -> This concept explains how to use fields_for with the :index option in Rails forms. 
+    -> It helps organize nested form fields efficiently, especially when working with associated
+       records like addresses for a person.
+
+    ```
+    <%= form_with model: @person do |person_form| %>
+      <%= person_form.text_field :name %>
+      <% @person.addresses.each do |address| %>
+        <%= person_form.fields_for address, index: address.id do |address_form| %>
+          <%= address_form.text_field :city %>
+        <% end %>
+      <% end %>
+    <% end %>
+    ```
+
+    -> form_with model: @person
+      > Creates a form for the @person object.
+      > The form will submit data to update @person.
+    
+    -> Looping through addresses (@person.addresses.each do |address|)
+      > This iterates over each address the person has.
+    
+    -> Using fields_for address, index: address.id
+      > fields_for creates fields for the address object inside the person form.
+      > The index: address.id ensures that each address is uniquely identified.
+    
+    -> Generating the city input field (address_form.text_field :city)
+      > Creates a text field for the city attribute of each address.
+    
+
+    -> The Generated HTML Output:
+    ```
+    <form accept-charset="UTF-8" action="/people/1" method="post">
+      <input name="_method" type="hidden" value="patch" />
+      <input id="person_name" name="person[name]" type="text" />
+      <input id="person_address_23_city" name="person[address][23][city]" type="text" />
+      <input id="person_address_45_city" name="person[address][45][city]" type="text" />
+    </form>
+    ```
+
+    -> Each address has a unique input name → person[address][23][city], person[address][45][city]
+    -> The index (address.id) appears in the input name, helping identify which address each 
+       field belongs to.
+    
+
+    -> When the form is submitted, Rails will generate the following params hash:
+
+    ```
+    {
+      "person" => {
+        "name" => "Bob",
+        "address" => {
+          "23" => { "city" => "Paris" },
+          "45" => { "city" => "London" }
+        }
+      }
+    }
+    ```
+
+    -> The "person" key contains the person’s details.
+    -> The "address" key contains a hash of addresses.
+    -> Each address is identified by its ID (23, 45).
+    -> Each address hash contains the city field.
+
+
+
+# 9 Building Complex Forms */*/*/*/*
+
+  ## 9.1 Configuring the Model for Nested Attributes -*-*-*-*
+
+    -> When our application requires editing multiple associated records within the same form,
+       Rails provides a way to handle this efficiently using nested attributes.
+    
+
+    -> Suppose we have a Person model.
+    -> Each person has multiple addresses (home, work, etc.).
+    -> We want to add, update, or remove addresses while editing a person in a single form.
+
+    -> The Solution: accepts_nested_attributes_for
+    -> To enable this, we configure the Person model to accept nested attributes for its
+       addresses.
+
+    ```
+    class Person < ApplicationRecord
+      has_many :addresses, inverse_of: :person
+      accepts_nested_attributes_for :addresses
+    end
+
+    class Address < ApplicationRecord
+      belongs_to :person
+    end
+    ```
+
+
+    ```
+    accepts_nested_attributes_for :addresses
+    ```
+    -> Rails automatically creates a special method:
+    -> addresses_attributes=, which allows handling multiple address records at once.
+
+
+    -> This means we can pass address data inside the person params, and Rails will:
+      > Create new addresses when a person is created.
+      > Update existing addresses when editing a person.
+      > Delete addresses if specified.
+    
+  
+
+  ## 9.2 Nested Forms in the View -*-*-*-*-*
+
+    -> We want to create a Person with multiple Address records within a single form. 
+    -> The user should be able to: 
+      > Input details for a person (e.g., name).
+      > Add multiple addresses (e.g., home, office).
+      > Ensure Rails correctly processes and stores this data.
+
+    -> Rails provides the fields_for helper, which is used to generate fields for associated
+       records.
+    ```
+    <%= form_with model: @person do |form| %>
+      Addresses:
+      <ul>
+        <%= form.fields_for :addresses do |addresses_form| %>
+          <li>
+            <%= addresses_form.label :kind %>
+            <%= addresses_form.text_field :kind %>
+
+            <%= addresses_form.label :street %>
+            <%= addresses_form.text_field :street %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+    ```
+
+    -> The fields_for :addresses ensures that Rails automatically creates form fields for each
+       address associated with the @person.
+    -> If the person has no addresses, the form will not render anything.
+
+
+
+    -> By default, if @person.addresses is empty, no address fields will appear.
+    -> To ensure at least two empty address fields are always present, modify the new action in
+       the controller:
+    ```
+    def new
+      @person = Person.new
+      2.times { @person.addresses.build } # Creates 2 empty addresses
+    end
+    ```
+
+    -> Now, when the form is rendered, it will contain two address input sections, even if the
+       person has no saved addresses.
+
+    -> Generated HTML:
+    ```
+    <form action="/people" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="lWTbg-4_5i4rNe6ygRFowjDfTj7uf-6UPFQnsL7H9U9Fe2GGUho5PuOxfcohgm2Z-By3veuXwcwDIl-MLdwFRg" autocomplete="off">
+      Addresses:
+      <ul>
+          <li>
+            <label for="person_addresses_attributes_0_kind">Kind</label>
+            <input type="text" name="person[addresses_attributes][0][kind]" id="person_addresses_attributes_0_kind">
+
+            <label for="person_addresses_attributes_0_street">Street</label>
+            <input type="text" name="person[addresses_attributes][0][street]" id="person_addresses_attributes_0_street">
+            ...
+          </li>
+
+          <li>
+            <label for="person_addresses_attributes_1_kind">Kind</label>
+            <input type="text" name="person[addresses_attributes][1][kind]" id="person_addresses_attributes_1_kind">
+
+            <label for="person_addresses_attributes_1_street">Street</label>
+            <input type="text" name="person[addresses_attributes][1][street]" id="person_addresses_attributes_1_street">
+            ...
+          </li>
+      </ul>
+    </form>
+    ```
+
+
+    -> When the form is submitted, the params hash will look like this:
+
+    ```
+    {
+      "person" => {
+        "name" => "John Doe",
+        "addresses_attributes" => {
+          "0" => {
+            "kind" => "Home",
+            "street" => "221b Baker Street"
+          },
+          "1" => {
+            "kind" => "Office",
+            "street" => "31 Spooner Street"
+          }
+        }
+      }
+    }
+    ```
+
+    -> Each address has an integer key ("0", "1"), which doesn’t matter as long as each one is
+       unique.
+    -> Rails will automatically create two Address records associated with the Person.
+
+
+    -> If the person already has saved addresses, fields_for will generate hidden input fields
+       for their IDs.
+    -> This helps Rails know which records to update instead of creating new ones.
+
+    ```
+    {
+      "person" => {
+        "name" => "John Doe",
+        "addresses_attributes" => {
+          "0" => {
+            "id" => "1",
+            "kind" => "Home",
+            "street" => "221b Baker Street"
+          },
+          "1" => {
+            "id" => "2",
+            "kind" => "Office",
+            "street" => "31 Spooner Street"
+          }
+        }
+      }
+    }
+    ```
+
+    -> Rails will update addresses with id: 1 and id: 2 instead of creating new records.
+    -> The hidden input field with id is automatically added by fields_for.
+
+
+  
+  ## 9.3 Permitting Parameters in the Controller -*-*-*-*
+
+    -> By default, Rails has strong parameters, which means that we must explicitly permit which
+       attributes can be passed to the model. 
+    -> Otherwise, Rails will ignore them to prevent security issues like mass assignment.
+
+    ```
+    def create
+      @person = Person.new(person_params)
+      # ...
+    end
+
+    private
+
+    def person_params
+      params.require(:person).permit(:name, addresses_attributes: [:id, :kind, :street])
+    end
+    ```
+
+    -> params.require(:person): Ensures that the root key is "person" in the incoming request.
+    -> permit(:name, addresses_attributes: [:id, :kind, :street]): Allows name and nested 
+       addresses_attributes fields to be used.
+    -> Without permitting the parameters, Rails will ignore the nested attributes, and the form 
+       submission won’t work.
+  
+
+  ## 9.4 Removing Associated Objects -*-*-*-*
+
+    -> By default, nested attributes do not allow deletion, meaning we can't remove an associated
+       address via the form.
+
+    -> To enable deletion, we add allow_destroy: true to the accepts_nested_attributes_for method
+       in the Person model:
+    ```
+    class Person < ApplicationRecord
+      has_many :addresses
+      accepts_nested_attributes_for :addresses, allow_destroy: true
+    end
+    ```
+
+    -> Now, when a submitted form contains a _destroy key set to true, Rails will delete that
+       associated address.
+    
+
+    -> To allow users to mark an address for deletion, we add a checkbox in the form:
+
+    ```
+    <%= form_with model: @person do |form| %>
+      Addresses:
+      <ul>
+        <%= form.fields_for :addresses do |addresses_form| %>
+          <li>
+            <%= addresses_form.check_box :_destroy %>
+            <%= addresses_form.label :kind %>
+            <%= addresses_form.text_field :kind %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+    ```
+
+    -> Generated HTML
+    ```
+    <input type="checkbox" value="1" name="person[addresses_attributes][0][_destroy]" id="person_addresses_attributes_0__destroy">
+    ```
+
+    -> If the user checks this box, _destroy will be set to 1, and Rails will know to delete the
+       record.
+    
+
+    -> Updating Strong Parameters in the Controller
+    -> To make sure _destroy is allowed, update person_params:
+
+    ```
+    def person_params
+      params.require(:person).
+        permit(:name, addresses_attributes: [:id, :kind, :street, :_destroy])
+    end
+    ```
+
+    -> Now, Rails can remove the Address record when _destroy: 1 is present.
+
+
+  
+  ## 9.5 Preventing Empty Records -*-*-*-*
+
+    -> If the form includes empty fields, Rails will attempt to create records with blank values,
+       which we usually don’t want.
+
+    -> To prevent this, we use the reject_if option in accepts_nested_attributes_for:
+    ```
+    class Person < ApplicationRecord
+      has_many :addresses
+      accepts_nested_attributes_for :addresses, reject_if: lambda { |attributes| attributes["kind"].blank? }
+    end
+    ```
+
+    -> Before creating an Address, Rails will check if kind is blank.
+    -> If it’s blank, Rails will not create the address.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

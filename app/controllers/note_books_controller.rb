@@ -69,6 +69,6 @@ class NoteBooksController < ApplicationController
   end
 
   def note_book_params
-    params.require(:note_book).permit(:title, :content, :author, :published_date, :reminder_time, :last_edited_at, :time_zone)
+    params.require(:note_book).permit(:title, :content, :author, :published_date, :reminder_time, :last_edited_at, :time_zone, tags: [])
   end
 end

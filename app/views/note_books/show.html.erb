@@ -7,4 +7,15 @@
 <p>Last Edited At: <%= @note_book.last_edited_at %></p>
 <p>Time Zone: <%= @note_book.time_zone %></p>
 
+<% if @notebook&.tags.present? %>
+  <h3>Tags:</h3>
+  <ul>
+    <% @notebook.tags.each do |tag| %>
+      <li><%= tag %></li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>No tags available</p>
+<% end %>
+
 <%= link_to "Back to All Notebooks", note_books_path %>

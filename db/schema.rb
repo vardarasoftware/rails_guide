@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_04_113301) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_05_063226) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -280,6 +280,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_04_113301) do
     t.time "reminder_time"
     t.datetime "last_edited_at"
     t.string "time_zone"
+    t.text "tags"
   end
 
   create_table "notifications", force: :cascade do |t|
