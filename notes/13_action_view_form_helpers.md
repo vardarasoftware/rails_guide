@@ -1714,6 +1714,73 @@
 
 
 
+# 10 Forms to External Resources */*/*/*/*
+
+  -> Sometimes, we need to submit form data to an external API instead of our Rails application.
+  -> Rails' form_with helper makes this easy.
+
+  -> If an external API requires an authenticity token, we can pass it like this:
+    ```
+    <%= form_with url: 'http://farfar.away/form', authenticity_token: 'external_token' do %>
+      <%= label_tag :name, "Your Name" %>
+      <%= text_field_tag :name %>
+
+      <%= submit_tag "Submit" %>
+    <% end %>
+    ```
+  
+  -> The form sends data to http://farfar.away/form.
+  -> Authenticity token (external_token) is included.
+  -> The external API validates this token.
+
+
+
+  -> Some APIs don't need an authenticity token. we can disable it:
+    ```
+    <%= form_with url: 'http://farfar.away/form', authenticity_token: false do %>
+      <%= label_tag :email, "Your Email" %>
+      <%= email_field_tag :email %>
+
+      <%= submit_tag "Send" %>
+    <% end %>
+    ```
+
+  -> Some external APIs reject extra fields (like authenticity_token).
+  -> Prevents unnecessary parameters in the request.
+
+
+
+
+# 11 Using Tag Helpers without a Form Builder */*/*/*/*
+  
+  -> In some cases, we might need to create form fields without using form_with or any form 
+     builder. 
+  -> Rails provides tag helpers that allow we to generate form elements manually.
+
+  ```
+  <%= checkbox_tag "accept" %>
+  ```
+
+  -> Output:
+  ```
+  <input type="checkbox" name="accept" id="accept" value="1" />
+  ```
+  -> Here, checkbox_tag generates a checkbox input.
+
+
+
+
+# 12 Using form_tag and form_for */*/*/*
+
+  -> Before form_with, Rails had:
+    > form_tag → Used for forms without models.
+    > form_for → Used for forms with models.
+
+  -> Both are now replaced by form_with, but we might still see them in older projects.
+
+
+
+
 
 
 
