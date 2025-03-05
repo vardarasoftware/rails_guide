@@ -7,8 +7,8 @@ class NoteBooksController < ApplicationController
     @note_book = NoteBook.new
     @authors = Author.all.pluck(:first_name, :last_name, :id)
     @categories = {
-      "Fiction" => [["Novel", "novel"], ["Poetry", "poetry"]],
-      "Non-Fiction" => [["Biography", "biography"], ["Science", "science"]]
+      "Fiction" => [[ "Novel", "novel" ], [ "Poetry", "poetry" ]],
+      "Non-Fiction" => [[ "Biography", "biography" ], [ "Science", "science" ]]
     }
   end
 
