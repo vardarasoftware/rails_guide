@@ -18,4 +18,9 @@ Rails.application.routes.draw do
   namespace :admin do
     resources :note_books
   end
+  resources :notebooks do
+    collection do
+      post :upload_csv
+    end
+  end
 end

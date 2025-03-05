@@ -988,7 +988,7 @@
 
   
 
-  ## 5.2 collection_radio_buttons Helper /*/*/*/*/*
+  ## 5.2 collection_radio_buttons Helper *-*-*-*-*
 
     -> The collection_radio_buttons helper generates a group of radio buttons from a collection.
 
@@ -1016,7 +1016,7 @@
 
 
   
-  ## 5.3 collection_checkboxes Helper */*/*/*/*
+  ## 5.3 collection_checkboxes Helper *-*-*-*-*-*
 
     -> The collection_checkboxes helper generates a set of checkboxes for multiple selections.
     -> This is useful for has_and_belongs_to_many (HABTM) or has_many :through associations.
@@ -1045,6 +1045,98 @@
     -> Each checkbox represents an interest with its ID as the value.
     -> The name="person[interest_id][]" (with []) allows multiple selections.
     -> Labels are linked to their respective checkboxes.
+
+
+
+
+# 6 Uploading Files */*/*/*/*/*
+
+  -> File uploads are a common requirement in web applications, such as uploading profile
+     pictures, CSV files, or documents. 
+  -> Rails makes this easy with the file_field helper.
+
+  -> Rails provides the file_field helper inside form_with to create a file upload input field.
+
+  ```
+  <%= form_with model: @person do |form| %>
+    <%= form.file_field :csv_file %>
+  <% end %>
+  ```
+
+  -> form.file_field :csv_file → Creates a file input field for the csv_file attribute.
+  -> form_with model: @person → The file will be part of the @person object.
+  -> The uploaded file will be available in params[:person][:csv_file].
+
+  -> multipart/form-data Requirement:
+    > For file uploads to work, the form must have enctype="multipart/form-data".
+    > This ensures that files are properly encoded and sent to the server.
+
+  -> Using file_field_tag Without a Model:
+    > If we're not working with a model, we can use file_field_tag inside form_with and manually
+      set multipart: true:
+    ```
+    <%= form_with url: "/uploads", multipart: true do |form| %>
+      <%= file_field_tag :csv_file %>
+    <% end %>
+    ```
+
+
+  -> Generated HTML:
+  ```
+  <form enctype="multipart/form-data" action="/people" accept-charset="UTF-8" method="post">
+    <input type="file" name="person[csv_file]" id="person_csv_file">
+  </form>
+  ```
+
+  -> <form enctype="multipart/form-data"> → Required for file uploads.
+  -> <input type="file" name="person[csv_file]"> → File input field.
+
+
+  ## 6.1 CSV File Upload Example -*-*-*-*-*
+
+    -> When we use file_field in Rails, the uploaded file is an instance of 
+       ActionDispatch::Http::UploadedFile, which provides methods to read and process the file.
+
+    -> The provided example shows how to parse a CSV file and store its data into a model.
+    ```
+    <%= form_with url: "/upload_csv", multipart: true do |form| %>
+      <%= form.file_field :csv_file %>
+      <%= form.submit "Upload CSV" %>
+    <% end %>
+    ```
+
+
+    -> Handle CSV Upload in Controller 
+
+    ```
+      require "csv"
+
+      def upload
+        uploaded_file = params[:csv_file]
+        if uploaded_file.present?
+          csv_data = CSV.parse(uploaded_file.read, headers: true)
+          csv_data.each do |row|
+            # Process each row of the CSV file
+            # SomeInvoiceModel.create(amount: row['Amount'], status: row['Status'])
+            Rails.logger.info row.inspect
+            #<CSV::Row "id":"po_1KE3FRDSYPMwkcNz9SFKuaYd" "Amount":"96.22" "Created (UTC)":"2022-01-04 02:59" "Arrival Date (UTC)":"2022-01-05 00:00" "Status":"paid">
+          end
+        end
+        # ...
+      end
+    ```
+
+    -> This retrieves the uploaded file from the form.
+    -> Ensures a file was uploaded before proceeding.
+    -> uploaded_file.read → Reads file contents.
+    -> CSV.parse(..., headers: true) → Parses the file with headers.
+    -> Reads CSV rows and saves them as records in the database.
+    
+
+
+
+
+
 
 
 

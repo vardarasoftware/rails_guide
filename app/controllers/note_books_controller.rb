@@ -1,4 +1,22 @@
 class NoteBooksController < ApplicationController
+  require "csv"
+  
+  def upload_csv
+    uploaded_file = params[:csv_file]
+      
+    if uploaded_file.present?
+      csv_data = CSV.parse(uploaded_file.read, headers: true)
+        
+      csv_data.each do |row|
+        NoteBook.create(title: row["Title"], description: row["Description"])
+      end
+        
+      redirect_to notebooks_path, notice: "CSV uploaded successfully!"
+    else
+      redirect_to notebooks_path, alert: "Please select a file."
+    end
+  end 
+  
   def index
     @note_books = NoteBook.all
   end

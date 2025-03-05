@@ -17,6 +17,26 @@
   </div>
 
   <div>
+      <%= form.label :published_date, "Published Date" %>
+      <%= form.date_select :published_date %>
+  </div>
+
+  <div>
+    <%= form.label :reminder_time, "Reminder Time" %>
+    <%= form.time_select :reminder_time, minute_step: 5 %>
+  </div>
+
+  <div>
+    <%= form.label :last_edited_at, "Last Edited At" %>
+    <%= form.datetime_select :last_edited_at %>
+  </div>
+
+  <div>
+    <%= form.label :time_zone, "Time Zone" %>
+    <%= form.time_zone_select :time_zone %>
+  </div>
+
+  <div>
     <%= form.submit "Update NoteBook" %>
   </div>
 
