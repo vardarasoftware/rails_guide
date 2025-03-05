@@ -12,7 +12,7 @@ class NoteBooksController < ApplicationController
     else
       redirect_to notebooks_path, alert: "Please select a file."
     end
-  end 
+  end
 
   def index
     @note_books = NoteBook.all
