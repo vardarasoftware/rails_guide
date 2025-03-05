@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_05_063226) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_05_085105) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -149,6 +149,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_063226) do
   create_table "categories_products", id: false, force: :cascade do |t|
     t.integer "product_id", null: false
     t.integer "category_id", null: false
+  end
+
+  create_table "clients", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "coffees", force: :cascade do |t|
