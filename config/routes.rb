@@ -14,4 +14,13 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   # root "posts#index"
   resources :note_books
+  resources :users, only: [ :new, :create ]
+  namespace :admin do
+    resources :note_books
+  end
+  resources :notebooks do
+    collection do
+      post :upload_csv
+    end
+  end
 end

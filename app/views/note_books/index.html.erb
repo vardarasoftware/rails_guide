@@ -5,6 +5,7 @@
     <tr>
       <th>Title</th>
       <th>Content</th>
+      <th>Author</th>
       <th colspan="3"></th>
     </tr>
   </thead>
@@ -14,6 +15,7 @@
       <tr>
         <td><%= note_book.title %></td>
         <td><%= note_book.content %></td>
+        <td><%= note_book.author %></td>
         <td><%= link_to "Show", note_book %></td>
         <td><%= link_to "Edit", edit_note_book_path(note_book) %></td>
         <td><%= link_to "Destroy", note_book, data: { turbo_method: :delete, turbo_confirm: "Are you sure?" } %></td>

@@ -1,0 +1,24 @@
+<%= form_with model: @notebook do |form| %>
+    <%= form.label :title, "Notebook Title" %>
+    <%= form.text_field :title %>
+
+    <%= form.label :author_id, "Select Author" %>
+    <%= form.select :author_id, @authors %>
+
+    <%= form.label :category, "Select Category" %>
+    <%= form.select :category, @categories %>
+
+    <%= form.label :author %>
+    <%= form.text_field :author %>
+
+    <%= form.label :published_date, "Published Date" %>
+    <%= form.date_select :published_date %>
+
+    <%= form.label :reminder_time, "Reminder Time" %>
+    <%= form.time_select :reminder_time, minute_step: 5 %>
+
+    <%= form.label :time_zone, "Time Zone" %>
+    <%= form.time_zone_select :time_zone %>
+
+    <%= form.submit "Save Notebook" %>
+<% end %>

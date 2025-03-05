@@ -1,8 +1,21 @@
 <h1>NoteBook Details</h1>
 <p>Title: <%= @note_book.title %></p>
+<p>Author: <%= @note_book.author %></p>
 <p>Content: <%= @note_book.content %></p>
+<p>Published Date: <%= @note_book.published_date %></p>
+<p>Reminder Time: <%= @note_book.reminder_time %></p>
+<p>Last Edited At: <%= @note_book.last_edited_at %></p>
+<p>Time Zone: <%= @note_book.time_zone %></p>
 
-<div class="blog-container">
-  <h1 class="blog-title"><%= @blogpost.title %></h1>
-  <p class="blog-content"><%= @blogpost.content %></p>
-</div>
+<% if @notebook&.tags.present? %>
+  <h3>Tags:</h3>
+  <ul>
+    <% @notebook.tags.each do |tag| %>
+      <li><%= tag %></li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>No tags available</p>
+<% end %>
+
+<%= link_to "Back to All Notebooks", note_books_path %>
