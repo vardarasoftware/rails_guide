@@ -8,16 +8,16 @@ class NoteBooksController < ApplicationController
       csv_data.each do |row|
         NoteBook.create(title: row["Title"], description: row["Description"])
       end
-      redirect_to notebooks_path, notice: "CSV uploaded successfully!"
+      redirect_to note_books_path, notice: "CSV uploaded successfully!"
     else
-      redirect_to notebooks_path, alert: "Please select a file."
+      redirect_to note_books_path, alert: "Please select a file."
     end
   end
 
   def index
     @note_books = NoteBook.all
-    if cookies[:last_opened_notebook]
-      @last_opened_notebook = NoteBook.find_by(id: cookies[:last_opened_notebook])
+    if cookies[:last_opened_note_book]
+      @last_opened_note_book = NoteBook.find_by(id: cookies[:last_opened_note_book])
     end
   end
 
@@ -33,8 +33,10 @@ class NoteBooksController < ApplicationController
   def create
     @note_book = NoteBook.new(note_book_params)
     if @note_book.save
-      redirect_to @note_book, notice: "Notebook created successfully!"
+      flash[:notice] = "Notebook created successfully!"
+      redirect_to @note_book
     else
+      flash[:alert] = "Error creating notebook."
       render :new
     end
   end
@@ -45,8 +47,17 @@ class NoteBooksController < ApplicationController
 
   def show
     @note_book = NoteBook.find(params[:id])
-    cookies[:last_opened_notebook] = @note_book.id
+    session[:last_note_book_id] = @note_book.id
     render "note_books/show"
+  end
+
+  def last_opened
+    if session[:last_note_book_id]
+      @note_book = NoteBook.find(session[:last_note_book_id])
+      redirect_to @note_book
+    else
+      redirect_to note_books_path, alert: "No note_book found."
+    end
   end
 
   def update

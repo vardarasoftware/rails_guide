@@ -734,6 +734,344 @@
 
 
 
+# 6 Session */*/*/*/*
+
+  -> Unlike cookies, which are stored on the client’s browser, sessions are stored on the server.
+  -> This makes them more secure and suitable for storing sensitive information like user 
+     authentication details.
+  
+  -> Sessions are stored on the server (in memory, database, or cache).
+  -> They expire after the user logs out or closes the browser.
+  -> They use a session ID cookie to identify users, but the actual session data stays server-side.
+
+  ## 6.1 Working with the Session -*-*-*-*
+
+    -> Rails provides the session method, which acts like a hash for storing and retrieving data.
+
+    ```
+    class ApplicationController < ActionController::Base
+      private
+        # Look up the key `:current_user_id` in the session and use it to
+        # find the current `User`. This is a common way to handle user login in
+        # a Rails application; logging in sets the session value and
+        # logging out removes it.
+        def current_user
+          @current_user ||= User.find_by(id: session[:current_user_id]) if session[:current_user_id]
+        end
+    end
+    ```
+
+    -> Checks if session[:current_user_id] exists.
+    -> If yes, fetches the corresponding user from the database.
+    -> Stores it in @current_user for use in the current request.
+
+
+
+    -> When a user logs in, we store their user ID in the session.
+
+    ```
+    class SessionsController < ApplicationController
+      def create
+        if user = User.authenticate_by(email: params[:email], password: params[:password])
+          # Save the user ID in the session so it can be used in
+          # subsequent requests
+          session[:current_user_id] = user.id
+          redirect_to root_url
+        end
+      end
+    end
+    ```
+
+    -> Authenticates the user.
+    -> If authentication is successful, stores user.id in session[:current_user_id].
+    -> Redirects to the homepage.
+
+
+
+    -> To log a user out, simply delete their session data.
+
+    ```
+    class SessionsController < ApplicationController
+      def destroy
+        session.delete(:current_user_id)
+        # Clear the current user as well.
+        @current_user = nil
+        redirect_to root_url, status: :see_other
+      end
+    end
+    ```
+
+    -> Deletes session[:current_user_id], logging the user out.
+    -> Clears @current_user so it doesn’t persist in memory.
+    -> Redirects the user to the homepage.
+
+
+
+
+  ## 6.2 The Flash -*-*-*-*
+
+    -> The flash in Rails is a temporary storage mechanism used to pass messages between different
+       controller actions. 
+    -> It’s commonly used to show notifications, alerts, or status messages after user actions 
+       like login, logout, or form submissions.
+    
+    -> Flash messages persist for one request only and are automatically cleared after the next
+       request.
+    -> It works like a hash where we store messages under keys like :notice or :alert.
+
+    ```
+    class SessionsController < ApplicationController
+      def destroy
+        session.delete(:current_user_id)
+        flash[:notice] = "You have successfully logged out."
+        redirect_to root_url, status: :see_other
+      end
+    end
+    ```
+
+    -> The user is logged out (session.delete(:current_user_id)).
+    -> A flash message "You have successfully logged out." is saved.
+    -> The user is redirected to the homepage (root_url).
+    -> On the homepage, the flash message is available for display but disappears after one
+       request.
+
+    
+    -> To display flash messages, add this to your application layout (app/views/layouts/ 
+       application.html.erb):
+
+    ```
+    <% if flash[:notice] %>
+      <p class="flash notice"><%= flash[:notice] %></p>
+    <% end %>
+
+    <% if flash[:alert] %>
+      <p class="flash alert"><%= flash[:alert] %></p>
+    <% end %>
+    ```
+    -> Now, if any controller sets flash[:notice] or flash[:alert], it will be displayed on the 
+       next page.
+
+
+    -> we can set flash messages directly in redirect_to:
+      ```
+      redirect_to root_url, notice: "You have successfully logged out."
+      redirect_to root_url, alert: "There was an issue."
+      ```
+
+    -> This is the same as:
+      ```
+      flash[:notice] = "You have successfully logged out."
+      redirect_to root_url
+      ```
+
+    
+
+    -> We are not limited to :notice and :alert. WE can define our own flash keys.
+      ```
+      redirect_to root_url, flash: { just_signed_up: true }
+      ```
+
+    -> Then, in the view:
+      ```
+      <% if flash[:just_signed_up] %>
+        <p class="welcome">Welcome to our site!</p>
+      <% end %>
+      ```
+    
+    -> This is useful for showing different types of messages.
+
+
+
+    ### 6.2.1 Displaying flash messages -----
+
+      -> When a controller sets a flash message (like flash[:notice] = "Logged in successfully."),
+         it should be displayed to the user on the next request. 
+      -> Instead of adding flash display logic to every view, we handle it once in the layout file
+         (app/views/layouts/application.html.erb), ensuring it's shown on all pages.
+
+      
+      -> Added to application.html.erb
+
+      ```
+      <html>
+        <!-- <head/> -->
+        <body>
+          <% flash.each do |name, msg| -%>
+            <%= content_tag :div, msg, class: name %>
+          <% end -%>
+
+          <!-- more content -->
+          <%= yield %>
+        </body>
+      </html>
+      ```
+
+      -> flash.each loops through all flash messages (e.g., flash[:notice], flash[:alert]).
+      -> content_tag :div, msg, class: name creates a <div> containing the message.
+      -> The class: name assigns CSS classes based on the flash type (notice, alert), so we can 
+         style them.
+      
+
+    
+    ### 6.2.2 flash.keep and flash.now ----
+
+      -> Rails provides flash messages to display notifications to users across requests.
+      -> Normally, flash messages persist for one request (after a redirect). 
+      -> However, sometimes we need them to behave differently—either persist across multiple
+         redirects or display immediately in the same request. 
+      -> This is where flash.keep and flash.now come in.
+
+
+      ->> flash.keep 
+        
+        -> Normally, flash messages disappear after the first redirect. 
+        -> If we need them to persist across multiple redirects, use flash.keep.
+
+
+        -> A user is redirected from SomeController → MainController#index → UsersController#index
+        -> The flash message should persist across both redirects
+
+        -> If flash[:notice] = "Welcome!" was set before redirecting to MainController#index, it
+           will disappear before reaching UsersController#index.
+        
+        ```
+        class MainController < ApplicationController
+          def index
+            flash.keep # Keeps all flash messages for the next request
+            redirect_to users_url
+          end
+        end
+        ```
+
+        -> Now, the flash message will still be available in UsersController#index.
+
+      
+      ->> flash.now:
+        -> Normally, flash messages only appear on the next request (after a redirect). 
+        -> However, flash.now allows us to display messages immediately in the same request.
+
+        -> A user submits a form to create a new Client.
+        -> If there's an error, the page should stay on the same form (render, not redirect) but
+           show an error message.
+
+        -> Since flash[:error] persists across requests, the error message will still be there on
+           the next request, which is not ideal.
+        
+        ```
+        class ClientsController < ApplicationController
+          def create
+            @client = Client.new(client_params)
+            if @client.save
+              redirect_to clients_path
+            else
+              flash.now[:error] = "Could not save client"
+              render action: "new"
+            end
+          end
+        end
+
+        ```
+
+        -> Now, the message appears immediately and disappears after rendering the form.
+
+
+
+
+
+  ## 6.3 Session Stores -*-*-*-*
+
+    -> In Rails, session data needs to be stored somewhere. 
+    -> The session ID is saved in a cookie, but the actual session data can be stored in
+       different ways. 
+    -> There are three main storage options:
+        > Cookie Store
+        > Cache Store
+        > ActiveRecord Store
+    
+
+    ### 6.3.1 CookieStore:
+
+      -> Where is the session data stored? → In the browser's cookies.
+      -> Size Limit? → 4KB (small limit).
+      -> Why use it? → Simple, lightweight, no extra setup.
+      -> Downside? → Not suitable for storing large or sensitive data.
+
+    ### 6.3.2 CacheStore:
+
+      -> Where is the session data stored? → In the Rails cache.
+      -> Why use it? → Faster than databases, no extra setup.
+      -> Downside? → Sessions may expire if the cache is cleared.
+
+
+    ### 6.3.3 ActiveRecordStore:
+
+      -> Where is the session data stored? → In a database table.
+      -> Why use it? → Stores more data than cookies, good for large applications.
+      -> Downside? → Slower than CookieStore.
+
+
+
+
+
+  ## 6.4 Session Storage Options -*-*-*-*
+
+    -> Rails provides multiple configuration options for session storage. 
+    -> we can set these options in an initializer (config/initializers/session_store.rb) or in 
+       config/application.rb.
+    
+    -> We can specify how Rails should store session data using session_store:
+    ```
+    Rails.application.config.session_store :cache_store
+    ```
+
+    OR
+
+    ```
+    Rails.application.config.session_store :cookie_store, key: "_your_app_session"
+    ```
+
+    -> :cache_store → Uses Rails cache for session storage.
+    -> :cookie_store → Stores session data in cookies (default).
+    -> :active_record_store → Stores session data in the database.
+
+
+    -> If we are using cookies to store sessions and want them to work across subdomains, set the
+       :domain option
+    ```
+    Rails.application.config.session_store :cookie_store, key: "_your_app_session", domain: ".example.com"
+    ```
+
+
+    -> Rails uses a secret key to sign session cookies. 
+    -> This ensures the data is not tampered with.
+    -> The secret key is stored in config/credentials.yml.enc.
+
+    ```
+    # aws:
+    #   access_key_id: 123
+    #   secret_access_key: 345
+
+    # Used as the base secret for all MessageVerifiers in Rails, including the one protecting cookies.
+    secret_key_base: 492f...
+    ```
+
+    -> If your secret key is leaked, your session data can be compromised. 
+    -> Always keep it private.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
