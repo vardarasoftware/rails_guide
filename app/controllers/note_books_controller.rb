@@ -74,7 +74,7 @@ class NoteBooksController < ApplicationController
     @note_book = NoteBook.find(params[:id])
     @note_book.destroy
     respond_to do |format|
-      format.html { redirect_to note_books_url, notice: 'NoteBook was successfully deleted.' }
+      format.html { redirect_to note_books_url, notice: "NoteBook was successfully deleted." }
       format.json { head :no_content }
     end
   end
