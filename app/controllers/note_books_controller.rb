@@ -3,11 +3,11 @@ class NoteBooksController < ApplicationController
   before_action :set_note_book, only: [ :show, :edit, :update, :destroy ]
 
   def upload_csv
-    uploaded_file = params[ :csv_file ]
+    uploaded_file = params[:csv_file]
     if uploaded_file.present?
       csv_data = CSV.parse(uploaded_file.read, headers: true)
       csv_data.each do |row|
-        NoteBook.create(title: row[ "Title" ], description: row[ "Description" ])
+        NoteBook.create(title: row["Title"], description: row["Description"])
       end
       redirect_to note_books_path, notice: "CSV uploaded successfully!"
     else
@@ -17,8 +17,8 @@ class NoteBooksController < ApplicationController
 
   def index
     @note_books = NoteBook.all
-    if cookies[ :last_opened_note_book ]
-      @last_opened_note_book = NoteBook.find_by(id: cookies[ :last_opened_note_book ])
+    if cookies[:last_opened_note_book]
+      @last_opened_note_book = NoteBook.find_by(id: cookies[:last_opened_note_book])
     end
   end
 
@@ -34,10 +34,10 @@ class NoteBooksController < ApplicationController
   def create
     @note_book = NoteBook.new(note_book_params)
     if @note_book.save
-      flash[ :notice ] = "Notebook created successfully!"
+      flash[:notice] = "Notebook created successfully!"
       redirect_to @note_book
     else
-      flash[ :alert ] = "Error creating notebook."
+      flash[:alert] = "Error creating notebook."
       render :new
     end
   end
@@ -48,13 +48,13 @@ class NoteBooksController < ApplicationController
 
   def show
     @note_book = NoteBook.find(params[:id])
-    session[ :last_note_book_id ] = @note_book.id
+    session[:last_note_book_id] = @note_book.id
     render "note_books/show"
   end
 
   def last_opened
-    if session[ :last_note_book_id ]
-      @note_book = NoteBook.find(session[ :last_note_book_id ])
+    if session[:last_note_book_id]
+      @note_book = NoteBook.find(session[:last_note_book_id])
       redirect_to @note_book
     else
       redirect_to note_books_path, alert: "No note_book found."
@@ -80,14 +80,14 @@ class NoteBooksController < ApplicationController
   end
 
   def set_cookie
-    cookies.signed[ :user_id ] = current_user.id
-    cookies.encrypted[ :last_opened ] = DateTime.now
+    cookies.signed[:user_id] = current_user.id
+    cookies.encrypted[:last_opened] = DateTime.now
     redirect_to action: "show_cookie"
   end
 
   def show_cookie
-    @user_id = cookies.signed[ :user_id ] # Get the user ID
-    @last_opened = cookies.encrypted[ :last_opened ] # Get the last opened time
+    @user_id = cookies.signed[:user_id] # Get the user ID
+    @last_opened = cookies.encrypted[:last_opened] # Get the last opened time
   end
 
   def set_note_book
