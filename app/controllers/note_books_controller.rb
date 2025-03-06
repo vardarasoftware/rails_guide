@@ -1,5 +1,6 @@
 class NoteBooksController < ApplicationController
   require "csv"
+  before_action :set_notebook, only: [:show, :edit, :update, :destroy]
 
   def upload_csv
     uploaded_file = params[:csv_file]

@@ -1065,6 +1065,198 @@
 
 
 
+# 7 Controller Callbacks */*/*/*
+
+  -> Controller callbacks in Rails are special methods that automatically execute before, after,
+     or around a controller action.
+  -> we can define a controller callback method in applicationcontroller.
+
+
+  -> Types of controller callbacks
+    
+    > before_action
+    > after_action
+    > around_action
+
+  
+  ## 7.1 before_action -*-*-*-*
+
+    -> before_action is a callback that runs before a controller action executes.
+    -> It is commonly used for:
+
+      > Authentication
+      > Authorization
+      > Pre-loading data
+    
+    -> If we want to restrict access to logged-in users, we can define a before_action in
+       ApplicationController:
+
+    ```
+    class ApplicationController < ActionController::Base
+      before_action :require_login
+
+      private
+        def require_login
+          unless logged_in?
+            flash[:error] = "You must be logged in to access this section"
+            redirect_to new_login_url # halts request cycle
+          end
+        end
+    end
+    ```
+
+    -> Checks if a user is logged in before running any action.
+    -> If not logged in, it redirects to the login page & stops execution.
+    -> This applies to all controllers because ApplicationController is the parent of all
+       controllers.
+    
+
+    -> If before_action :require_login applies to all actions, the login page itself won’t work
+       because it will always require login.
+    ```
+    class LoginsController < ApplicationController
+      skip_before_action :require_login, only: [:new, :create]
+    end
+    ```
+
+    -> Now, new and create actions in LoginsController can be accessed without logging in.
+    -> Other actions in the app still require login.
+
+
+  
+  ## 7.2 after_action and around_action -*-*-*-*
+
+    -> Rails provides controller callbacks that allow you to run specific code before, after, or
+       around a controller action. 
+    -> These are useful for handling authentication, logging, performance monitoring, etc.
+
+    ->> after_action:
+
+      -> This callback runs only if the action completes successfully.
+      -> It does not execute if an exception occurs.
+      -> It is useful when you want to modify or log the response before sending it to the client.
+
+    
+    ->> around_action: 
+
+      -> This callback wraps around the action execution.
+      -> It can be used for performance monitoring, transactions, logging, etc.
+      -> Unlike after_action, it runs even if an exception occurs.
+
+
+    ```
+    class ApplicationController < ActionController::Base
+      around_action :measure_execution_time
+
+      private
+        def measure_execution_time
+          start_time = Time.now
+          yield  # This executes the action
+          end_time = Time.now
+
+          duration = end_time - start_time
+          Rails.logger.info "Action #{action_name} from controller #{controller_name} took #{duration.round(2)} seconds to execute."
+        end
+    end
+    ```
+
+    -> start_time is recorded before the action runs.
+    -> yield executes the action.
+    -> end_time is recorded after the action and rendering are complete.
+    -> The total execution time is logged.
+
+
+    ->> When to Use after_action vs around_action?
+
+      -> Use after_action when we need to modify or log the response only if the action succeeds.
+      -> Use around_action when we want to wrap code before and after an action regardless of 
+         success or failure.
+
+
+
+  ## 7.3 Other Ways to Use Callbacks -*-*-*-*
+
+    -> Apart from the standard before_action, after_action, and around_action methods, Rails
+       allows two other ways to define callbacks:
+      
+      > Using a Block Directly
+      > Using a Separate Class for Callbacks
+
+    ->> Using a Block Directly
+    
+    -> Instead of defining a method for the callback, we can pass a block directly to
+       before_action, after_action, or around_action.
+    
+    ```
+    class ApplicationController < ActionController::Base
+      before_action do |controller|
+        unless controller.send(:logged_in?)
+          flash[:error] = "You must be logged in to access this section"
+          redirect_to new_login_url
+        end
+      end
+    end
+    ```
+
+    -> The block receives the controller as an argument.
+    -> controller.send(:logged_in?) is used because logged_in? is a private method, and blocks do
+       not run in the controller's scope.
+    -> If the user is not logged in, they are redirected to the login page.
+
+
+    ->> Using a Separate Class for Callbacks
+
+    -> For complex logic, we can define a separate class and register it as a callback.
+
+    ```
+    class ApplicationController < ActionController::Base
+      around_action ActionDurationCallback
+    end
+
+    class ActionDurationCallback
+      def self.around(controller, action)
+        start_time = Time.now
+        yield  # Runs the action
+        end_time = Time.now
+
+        duration = end_time - start_time
+        Rails.logger.info "Action #{action} from controller #{controller} took #{duration.round(2)} seconds to execute."
+      end
+    end
+
+    ```
+
+    -> around_action ActionDurationCallback tells Rails to use ActionDurationCallback for around
+       actions.
+    -> ActionDurationCallback is a separate class with a class method around(controller, action).
+    -> yield executes the controller action.
+    -> The time taken is logged.
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

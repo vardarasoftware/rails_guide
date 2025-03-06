@@ -1,6 +1,11 @@
 class SessionsController < ApplicationController
+  
+  def new
+    render :new
+  end
+
   def create
-    user = User.find_by(email: params[:email])
+    user = Usertwo.find_by(email: params[:email])
     if user&.authenticate(params[:password])
       session[:user_id] = user.id  # Store user ID in session
       redirect_to notebooks_path, notice: "Logged in successfully!"
