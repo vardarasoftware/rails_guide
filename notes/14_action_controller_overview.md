@@ -362,6 +362,376 @@
 
 
 
+# 4 Strong Parameters */*/*/*/*
+
+  -> Strong Parameters is a security feature in Rails that prevents mass assignment 
+     vulnerabilities by requiring explicit permission before updating model attributes.
+  
+  -> By default, Rails does not allow mass assignment of parameters unless explicitly permitted.
+  -> This prevents attackers from modifying sensitive attributes (e.g., admin: true) through form
+     submissions.
+  -> To prevent mass assignment issues, Rails requires explicitly permitting attributes:
+
+    ```
+    class PeopleController < ActionController::Base
+      # This will raise an ActiveModel::ForbiddenAttributesError
+      # because it's using mass assignment without an explicit permit.
+      def create
+        Person.create(params[:person])
+      end
+
+      # This will work as we are using `person_params` helper method, which has the
+      # call to `expect` to allow mass assignment.
+      def update
+        person = Person.find(params[:id])
+        person.update!(person_params)
+        redirect_to person
+      end
+
+      private
+        # Using a private method to encapsulate the permitted parameters is a good
+        # pattern. You can use the same list for both create and update.
+        def person_params
+          params.expect(person: [:name, :age])
+        end
+    end
+    ```
+  
+  -> params.require(:person): Ensures the person key is present in the request.
+  -> If missing, Rails will return a 400 Bad Request error.
+  -> .permit(:name, :age): Allows only specific attributes (name, age) to be updated.
+
+
+
+  ## 4.1 Permitting Values -*-*-*-*
+
+    ### 4.1.1 expect ---
+
+      -> The expect method is a strict way to extract parameters. 
+      -> It ensures the presence of a parameter and permits only the specified values. 
+      -> If the key is missing or invalid, it raises an error (HTTP 400 Bad Request).
+
+      ```
+      id = params.expect(:id)
+      ```
+
+      -> Ensures :id is present.
+      -> Always returns a scalar value (single value, not an array or hash).
+      -> If :id is missing, it raises an error.
+
+
+      ```
+      user_params = params.expect(user: [:username, :password])
+      user_params.has_key?(:username) # => true
+      ```
+
+      -> Ensures :user exists and contains :username and :password.
+      -> If :user is missing, it raises a 400 Bad Request error.
+
+
+      ```
+      params.expect(log_entry: {})
+      ```
+
+      -> Allows all current and future attributes inside :log_entry.
+      -> Risky! If the model structure changes, new fields could be mass-assigned unexpectedly.
+
+
+    
+    ### 4.1.2 permit ----
+
+      -> The permit method allows specific parameters for mass assignment. Unlike expect, it does
+         not raise an error if a key is missing.
+      
+      ```
+      params = ActionController::Parameters.new(id: 1, admin: "true")
+      => #<ActionController::Parameters {"id"=>1, "admin"=>"true"} permitted: false>
+      params.permit(:id)
+      => #<ActionController::Parameters {"id"=>1} permitted: true>
+      params.permit(:id, :admin)
+      => #<ActionController::Parameters {"id"=>1, "admin"=>"true"} permitted: true>
+      ```
+
+      -> Only allows the permitted keys.
+      -> Unpermitted values are filtered out without raising an error.
+
+
+      ```
+      params = ActionController::Parameters.new(tags: ["rails", "parameters"])
+      => #<ActionController::Parameters {"tags"=>["rails", "parameters"]} permitted: false>
+      params.permit(tags: [])
+      => #<ActionController::Parameters {"tags"=>["rails", "parameters"]} permitted: true>
+      ```
+
+      -> Ensures that tags contains only permitted scalar values (e.g., strings, numbers, dates).
+
+
+      ```
+      params = ActionController::Parameters.new(options: { darkmode: true })
+      => #<ActionController::Parameters {"options"=>{"darkmode"=>true}} permitted: false>
+      params.permit(options: {})
+      => #<ActionController::Parameters {"options"=>#<ActionController::Parameters {"darkmode"=>true} permitted: true>} permitted: true>
+      ```
+
+      -> Allows all permitted scalars inside options.
+      -> Risk: Allowing an entire hash ({}) might expose sensitive fields.
+
+
+    ### 4.1.3 permit! ----
+
+      -> The permit! method allows all parameters without any restrictions.
+
+      ```
+      params = ActionController::Parameters.new(id: 1, admin: "true")
+      => #<ActionController::Parameters {"id"=>1, "admin"=>"true"} permitted: false>
+      params.permit!
+      => #<ActionController::Parameters {"id"=>1, "admin"=>"true"} permitted: true>
+      ```
+
+      -> All attributes are allowed.
+      -> Use only when you trust the source (e.g., internal APIs).
+
+
+
+
+
+  ## 4.2 Nested Parameters *-*-*-*-*
+
+    -> In Rails, nested parameters are often used when dealing with complex data structures like
+       arrays of objects or deeply nested hashes.
+    
+    -> To safely extract and permit nested parameters, we use expect or permit.
+
+    ```
+    params = ActionController::Parameters.new(
+      name: "Martin",
+      emails: ["me@example.com"],
+      friends: [
+        { name: "André", family: { name: "RubyGems" }, hobbies: ["keyboards", "card games"] },
+        { name: "Kewe", family: { name: "Baroness" }, hobbies: ["video games"] },
+      ]
+    )
+    ```
+
+    -> name: A string (scalar value).
+    -> emails: An array of strings.
+    -> friends: An array of hashes, where:
+      > Each friend has a name (string).
+      > Each friend has a family hash (only name is allowed).
+      > Each friend has a hobbies array (only strings are allowed).
+
+
+    -> Extracting and Permitting Nested Parameters
+    ```
+    name, emails, friends = params.expect(
+      :name,                 #  Permitted scalar
+      emails: [],            #  Array of permitted scalars (strings)
+      friends: [[            #  Array of permitted hashes (note the double brackets `[[ ]]`)
+        :name,               #  Permitted scalar inside each friend object
+        family: [:name],     #  Permitted nested hash (family with only `name`)
+        hobbies: []          #  Array of permitted scalars inside friends
+      ]]
+    )
+    ```
+
+    -> Allows name as a simple string.
+    -> Allows emails to be an array of strings.
+    -> The double array syntax ([[ ... ]]) means friends must be an array of objects with specific
+       fields.
+    
+
+  ## 4.3 Examples -*-*-*-*
+
+    -> These examples demonstrate how to use Strong Parameters in Rails to securely permit 
+       specific attributes in controller actions.
+
+    -> Example 1: Using fetch to Handle Missing Parameters
+    -> When creating a new record, the root key (like :blog) might not exist in the params. 
+    -> If we try to use require(:blog), it will throw an error. Instead, fetch(:blog, {}) ensures 
+       that even if :blog is missing, an empty hash {} is used, allowing the .permit(:title, 
+       :author) method to work safely.
+
+    ```
+    params.fetch(:blog, {}).permit(:title, :author)
+    ```
+
+    -> If params contains { blog: { title: "My Blog", author: "John Doe" } }, it permits title 
+       and author.
+    -> If params does not contain :blog, fetch provides {} instead of raising an error.
+
+
+    -> Example 2: Permitting Nested Attributes for Associated Records
+    -> When updating associated records (e.g., an author with books), Rails requires special 
+       handling. 
+    -> The accepts_nested_attributes_for method in the model allows updating or destroying 
+       associated records based on id and _destroy.
+
+    ```
+    params.expect(author: [ :name, books_attributes: [[ :title, :id, :_destroy ]] ])
+    ````
+
+    -> This allows:
+      > :name for the author
+      > :title, :id, and :_destroy for nested books
+      > The _destroy attribute is used to mark a record for deletion.
+
+
+    -> Example 3: Handling Hashes with Numeric Keys in Nested Attributes
+    -> When dealing with has_many associations, nested attributes might use integer keys instead 
+       of arrays.
+
+
+    ```
+    {
+      "book" => {
+        "title" => "Some Book",
+        "chapters_attributes" => {
+          "1" => { "title" => "First Chapter" },
+          "2" => { "title" => "Second Chapter" }
+        }
+      }
+    }
+
+
+    -> The strong parameters must be defined as:
+
+    ```
+    params.expect(book: [ :title, chapters_attributes: [[ :title ]] ])
+    ````
+
+    -> :title is permitted for the book.
+    -> chapters_attributes allows multiple chapters, each having a :title.
+
+
+    
+    -> Example 4: Permitting a Hash with Arbitrary Data
+    -> Sometimes, you need to allow a hash with unknown keys (e.g., dynamic metadata or settings).
+
+    ```
+    def product_params
+      params.expect(product: [ :name, data: {} ])
+    end
+    ```
+
+    -> :name is permitted for the product.
+    -> data: {} allows any key-value pairs inside the data hash.
+
+    -> This is useful when you don’t know in advance what keys will be inside data, but 
+       we still want to permit the whole hash.
+
+
+
+# 5 Cookies */*/*/*/*
+
+  -> Cookies are small pieces of data stored in a user’s browser by a web server. 
+  -> They help web applications remember information across different requests, such as user 
+     preferences, login sessions, or form data.
+  -> Rails provides a simple way to work with cookies using the cookies method, which behaves 
+     like a hash.
+  
+    ```
+    class CommentsController < ApplicationController
+      def new
+        # Auto-fill the commenter's name if it has been stored in a cookie
+        @comment = Comment.new(author: cookies[:commenter_name])
+      end
+
+      def create
+        @comment = Comment.new(comment_params)
+        if @comment.save
+          if params[:remember_name]
+            # Save the commenter's name in a cookie.
+            cookies[:commenter_name] = @comment.author
+          else
+            # Delete cookie for the commenter's name, if any.
+            cookies.delete(:commenter_name)
+          end
+          redirect_to @comment.article
+        else
+          render action: "new"
+        end
+      end
+    end
+    ```
+  
+  -> new action:
+    > If the commenter_name cookie exists, it pre-fills the name field.
+
+  -> create action:
+    > If the user checks "Remember my name," the name is saved in a cookie.
+    > Otherwise, the cookie is deleted.
+
+
+  -> By default, a cookie disappears when the user closes their browser (a session cookie). However, you can set an expiration time.
+
+  -> Set a cookie to expire in 1 hour:
+    
+    ```
+    cookies[:login] = { value: "XJ-122", expires: 1.hour }
+    ```
+
+  -> Delete a cookie properly:
+    ```
+    cookies.delete(:login)  # This removes the cookie
+    ```
+  
+  -> Setting a cookie to nil does NOT delete it. we must use cookies.delete(:key).
+
+
+  -> Permanent Cookies (Never Expire)
+    > To create a cookie that lasts 20 years, use the permanent method:
+
+    ```
+    cookies.permanent[:locale] = "fr"
+    ```
+
+  -> This is useful for storing user preferences like language settings.
+
+
+
+  ## 5.1 Encrypted and Signed Cookies -*-*-*-*
+
+    -> Since cookies are stored on the client’s browser, they can be modified by the user. 
+    -> This makes them unsafe for storing sensitive data like user IDs, expiration dates, or
+       authentication tokens.
+
+    -> Rails provides two special types of cookies to improve security:
+
+      > Signed Cookies → Prevent tampering but data is still visible.
+      > Encrypted Cookies → Prevent tampering and hide the data.
+
+    
+    ->> Single Cookies -> Signed cookies append a cryptographic signature to the data. 
+                          This ensures that the data cannot be modified by the user. 
+                          However, the data is still readable in the browser.
+    
+    ->> Encrypted Cookies -> Encrypted cookies both sign and encrypt the data, meaning:
+                             Users cannot modify them and Users cannot read their contents.
+                          
+
+    -> Using Signed & Encrypted Cookies
+    ```
+    class CookiesController < ApplicationController
+      def set_cookie
+        cookies.signed[:user_id] = current_user.id
+        cookies.encrypted[:expiration_date] = Date.tomorrow # => Thu, 20 Mar 2024
+        redirect_to action: "read_cookie"
+      end
+
+      def read_cookie
+        cookies.encrypted[:expiration_date] # => "2024-03-20"
+      end
+    end
+    ```
+
+    -> Signed Cookie → Ensures user_id isn’t changed.
+    -> Encrypted Cookie → Hides expiration_date completely.
+
+
+    -> Rails converts objects (like Date, Time, Symbols, etc.) into strings before storing them in
+       cookies. 
+    -> By default, Rails uses JSON serialization (:json).
+
 
 
 

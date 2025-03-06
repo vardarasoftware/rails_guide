@@ -16,6 +16,9 @@ class NoteBooksController < ApplicationController
 
   def index
     @note_books = NoteBook.all
+    if cookies[:last_opened_notebook]
+      @last_opened_notebook = NoteBook.find_by(id: cookies[:last_opened_notebook])
+    end
   end
 
   def new
@@ -42,6 +45,7 @@ class NoteBooksController < ApplicationController
 
   def show
     @note_book = NoteBook.find(params[:id])
+    cookies[:last_opened_notebook] = @note_book.id
     render "note_books/show"
   end
 
@@ -57,6 +61,17 @@ class NoteBooksController < ApplicationController
   def destroy
     @note_book.destroy
     redirect_to note_books_path, notice: "NoteBook deleted successfully."
+  end
+
+  def set_cookie
+    cookies.signed[:user_id] = current_user.id
+    cookies.encrypted[:last_opened] = DateTime.now
+    redirect_to action: "show_cookie"
+  end
+
+  def show_cookie
+    @user_id = cookies.signed[:user_id] # Get the user ID
+    @last_opened = cookies.encrypted[:last_opened] # Get the last opened time
   end
 
   private
