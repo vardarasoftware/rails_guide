@@ -393,9 +393,223 @@
       -> WEBrick (Rails' default server) does not support live streaming because it buffers  
          responses.
 
-         
 
 
+
+
+# 6 Log Filtering */*/*/*
+
+  -> Rails provides log filtering to prevent sensitive information from being exposed in log
+     files, which is especially important in production environments.
+  
+
+  ## 6.1 Parameter Filtering -*-*-*-*
+
+    -> By default, Rails logs every request, including parameters like form inputs and query
+       strings. 
+    -> However, some parameters should not be stored in logs.
+
+    -> We can configure filter_parameters in config/application.rb to prevent sensitive data from
+       appearing in logs.
+
+    ```
+    config.filter_parameters << :password
+    ```
+    -> [FILTERED] replaces the actual password, ensuring security.
+
+    
+    -> Partial Matching for Filtering
+    -> The filter works with partial matching, so if you specify :passw, it will automatically 
+       filter:
+       > password
+       > password_confirmation
+       > user_passw
+
+  
+  ## 6.2 Redirects Filtering -*-*-*-*
+
+    -> Sometimes, wemight want to filter sensitive URLs when logging redirects.
+
+    -> For filter redirects we can use filter_redirect in config/application.rb.
+
+    ```
+    config.filter_redirect << "s3.amazonaws.com"
+    ```
+    
+    -> Now, if a redirect happens to https://s3.amazonaws.com/private_file, Rails will log:
+
+    ```
+    Redirected to [FILTERED]
+    ```
+
+    -> Filtering Multiple URLs with Regular Expressions
+    ```
+    config.filter_redirect.concat ["s3.amazonaws.com", /private_path/]
+    ```
+
+    -> s3.amazonaws.com → Filters any AWS S3 URL
+    -> /private_path/ → Filters any URL containing "private_path"
+    -> If we only want to filter query parameters (not the entire URL), use parameter filtering
+       instead. 
+
+
+
+
+
+# 7 Force HTTPS Protocol */*/*/*
+  
+  -> By default, Rails allows both HTTP and HTTPS traffic. 
+  -> However, in production, we should force all requests to use HTTPS to keep communication
+     secure and encrypted.
+  
+  -> When you enable config.force_ssl = true, Rails does the following:
+
+    -> Redirects all HTTP requests to HTTPS
+    -> If a user tries to visit http://example.com, they will be redirected to https://example.com.
+    -> Sets the Secure flag for cookies
+    -> Cookies will only be sent over HTTPS, preventing session hijacking.
+    -> Adds HSTS (HTTP Strict Transport Security) header
+    -> Browsers will remember that our site should always use HTTPS, even if a user types http://.
+
+
+
+  --> Why Use force_ssl?
+
+    -> Prevents Man-in-the-Middle (MITM) attacks
+    -> Encrypts all communication, protects passwords, session cookies, API calls
+    -> Boosts SEO rankings
+    -> Prevents mixed-content warnings, ensures all assets load securely
+  
+
+
+
+
+
+# 8 Built-in Health Check Endpoint */*/*/*
+
+  -> Rails provides a built-in health check at the /up path. 
+  -> This is useful for monitoring whether our application is running properly.
+
+
+  -> Why is /up Useful?
+    > Health Monitoring → Used by load balancers, Kubernetes, AWS, uptime monitors
+    > Simple and Built-in → No extra setup needed for basic usage
+    > Quick Status Check → Ensure your Rails app has booted correctly
+
+  
+  -> By default, the health check is at /up. 
+  -> we can change the path by updating config/routes.rb
+
+  ```
+  Rails.application.routes.draw do
+    get "health" => "rails/health#show", as: :rails_health_check
+  end
+  ```
+
+  -> Now, the health check will be available at:
+  ```
+  GET /health
+  ```
+
+
+
+
+# 9 Handling Errors */*/*/*
+
+  -> When something goes wrong in a Rails app. Rails automatically handles the exception and shows
+     an error page
+  
+
+  -> In Development Mode if an error occurs, Rails shows a detailed error page with a stack trace,
+     request details, and debugging information.
+  -> This helps developers quickly identify and fix issues.
+
+  -> In Production Mode Rails hides sensitive details and shows generic error pages:
+    > 500 Internal Server Error → When an unknown error happens.
+    > 404 Not Found → If a requested resource does not exist.
+  -> This is done for security reasons, so users don’t see system details.
+
+
+
+  ## 9.1 The Default Error Templates -*-*-*-*
+
+    -> Rails uses static HTML pages located in the /public folder:
+      > 404.html → Shown when a resource is not found.
+      > 500.html → Shown when an internal server error occurs.
+    
+    -> we can edit these files to provide a better user experience by adding custom messages or 
+       designs.
+
+  
+
+  ## 9.2 rescue_from -*-*-*-*
+
+    -> Rails provides a powerful way to handle specific exceptions using the rescue_from method.
+    -> This allows you to catch and process errors at the controller level, rather than letting 
+       Rails display the default error pages.
+    
+    -> It intercepts exceptions before they reach Rails' default error handling.
+    -> It allows custom error handling for specific errors.
+    -> It applies to the controller where it's defined and all its subclasses.
+
+    -> Whenever an exception occurs, Rails checks if there is a rescue_from directive for that
+       exception.
+    -> If no rescue_from is found, Rails will display a default 404 or 500 error page.
+    -> If a rescue_from handler is defined, it will execute the specified method instead.
+
+    ```
+    class ApplicationController < ActionController::Base
+      rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
+
+      private
+        def record_not_found
+          render plain: "Record Not Found", status: 404
+        end
+    end
+    ```
+
+    -> If ActiveRecord::RecordNotFound is raised, the method record_not_found will be called.
+    -> Instead of Rails' default 404 page, the user will see "Record Not Found" as plain text.
+    -> The HTTP response code is set to 404 (Not Found).
+
+
+
+    ```
+    class ApplicationController < ActionController::Base
+      rescue_from User::NotAuthorized, with: :user_not_authorized
+
+      private
+        def user_not_authorized
+          flash[:error] = "You don't have access to this section."
+          redirect_back(fallback_location: root_path)
+        end
+    end
+
+    class ClientsController < ApplicationController
+      # Check that the user has the right authorization to access clients.
+      before_action :check_authorization
+
+      def edit
+        @client = Client.find(params[:id])
+      end
+
+      private
+        # If the user is not authorized, throw the custom exception.
+        def check_authorization
+          raise User::NotAuthorized unless current_user.admin?
+        end
+    end
+
+    ```
+
+    -> If ActiveRecord::RecordNotFound is raised, the method record_not_found will be called.
+    -> Instead of Rails' default 404 page, the user will see "Record Not Found" as plain text.
+    -> The HTTP response code is set to 404 (Not Found).
+
+    -> Before an action runs, check_authorization ensures the user is an admin.
+    -> If the user is not an admin, it raises User::NotAuthorized.
+    -> The rescue_from directive catches this exception and calls user_not_authorized.
+    -> Instead of a 500 error, the user is redirected back with an error message.
 
 
 

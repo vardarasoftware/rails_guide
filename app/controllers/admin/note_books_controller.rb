@@ -3,6 +3,8 @@ class Admin::NoteBooksController < ApplicationController
 
   http_basic_authenticate_with name: "Arthur", password: "42424242"
 
+  rescue_from ActiveRecord::RecordNotFound, with: :note_book_not_found
+
   def new
     @note_book = NoteBook.new
   end
@@ -50,6 +52,10 @@ class Admin::NoteBooksController < ApplicationController
   end
 
   private
+
+  def note_book_not_found
+    render plain: "Notebook Not Found", status: 404
+  end
 
   def note_book_params
     params.require(:note_book).permit(:title, :content, :author)
