@@ -59,6 +59,144 @@
 
 
 
+# 3 Controlling Allowed Browser Versions */*/*/*
+
+  -> Rails restrict access to our application based on the browser version using the allow_browser
+     method in ApplicationController.
+  
+  -> Rails by default allows only the latest browsers:
+    > Safari 17.2+, Chrome 120+, Firefox 121+, Opera 106+
+
+  ```
+  class ApplicationController < ActionController::Base
+    # Only allow modern browsers supporting webp images, web push, badges, import # maps, CSS nesting, and CSS :has.
+    allow_browser versions: :modern
+  end
+  ```
+
+  -> We can manually specify which browser versions to allow.
+  ```
+  class ApplicationController < ActionController::Base
+    allow_browser versions: { safari: 16.4, firefox: 121, ie: false }
+  end
+  ```
+
+  -> This customization Allows Safari 16.4+, Firefox 121+, Blocks Internet Explorer (IE) completely
+     and Allows all versions of Chrome & Opera
+  
+
+
+  -> We can apply browser restrictions only to specific actions using only or except.
+
+  ```
+  class MessagesController < ApplicationController
+    allow_browser versions: { opera: 104, chrome: 119 }, only: :show
+  end
+  ```
+
+  -> This customization Blocks Opera below 104 and Chrome below 119, Only applies to the show
+     action and Other actions are not affected
+
+  
+
+
+
+# 4 HTTP Authentication */*/*/*/*
+
+  -> Rails comes with three built-in HTTP authentication mechanisms:
+
+    > Basic Authentication
+    > Digest Authentication
+    > Token Authentication
+
+  
+  ## 4.1 HTTP Basic Authentication -*-*-*-*
+
+    -> This is the simplest method where a user enters a username and password in a browser popup
+       before accessing a page. 
+    -> The credentials are sent in the HTTP header with every request.
+
+    ```
+    class AdminsController < ApplicationController
+      http_basic_authenticate_with name: "Arthur", password: "42424242"
+    end
+    ```
+    -> Now, when users try to access any action in AdminsController, they must enter the username 
+       (Arthur) and password (42424242).
+
+    -> How it works:
+
+      > The browser asks for a username & password.
+      > The credentials are encoded and sent with each request.
+      > If they match, the user is granted access.
+
+  
+
+  ## 4.2 HTTP Digest Authentication -*-*-*-*
+
+    -> Unlike Basic Authentication, Digest Authentication does not send plain text passwords.
+    -> It uses a hashed version of the password that ensures passwords are never transmitted
+       directly over the network.
+    
+    ```
+    class AdminsController < ApplicationController
+      USERS = { "admin" => "helloworld" }
+
+      before_action :authenticate
+
+      private
+        def authenticate
+          authenticate_or_request_with_http_digest do |username|
+            USERS[username]
+          end
+        end
+    end
+    ```
+
+    -> The browser asks for a username & password.
+    -> Instead of sending the password directly, it sends a hashed digest.
+    -> Rails checks the hash and grants access if it matches.
+
+
+
+
+  ## 4.3 HTTP Token Authentication -*-*-*-*
+
+    -> Instead of asking for a username & password every time, the user gets a token after logging 
+       in. 
+    -> The token is then sent in the request header instead of credentials.
+
+    ```
+    class PostsController < ApplicationController
+      TOKEN = "secret"
+
+      before_action :authenticate
+
+      private
+        def authenticate
+          authenticate_or_request_with_http_token do |token, options|
+            ActiveSupport::SecurityUtils.secure_compare(token, TOKEN)
+          end
+        end
+    end
+    ```
+
+    -> A user logs in and receives a unique token (e.g., "secret").
+    -> The token is stored on the client side.
+    -> For every request, the client sends the token in the HTTP Authorization header
+    -> The server compares the token and grants access if it matches.
+
+    
+
+
+
+
+
+
+
+
+
+
 
 
 
