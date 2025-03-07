@@ -186,7 +186,218 @@
     -> For every request, the client sends the token in the HTTP Authorization header
     -> The server compares the token and grants access if it matches.
 
+
+
+
+
+# 5 Streaming and File Downloads */*/*/*
+
+  -> Rails allows us to send files to users instead of rendering an HTML page. 
+  -> This is useful for downloading PDFs, CSVs, images, or other files. 
+  -> We can achieve this using two methods:
+    > send_data
+    > send_file
+
+  
+  -> When we generate a file dynamically like a PDF, use send_data. 
+  -> This method does not require a physical file on disk; instead, it sends generated data
+     directly to the client.
+  
+  ```
+  require "prawn"
+  class ClientsController < ApplicationController
+    # Generates a PDF document with information on the client and
+    # returns it. The user will get the PDF as a file download.
+    def download_pdf
+      client = Client.find(params[:id])
+      send_data generate_pdf(client),
+                filename: "#{client.name}.pdf",
+                type: "application/pdf"
+    end
+
+    private
+      def generate_pdf(client)
+        Prawn::Document.new do
+          text client.name, align: :center
+          text "Address: #{client.address}"
+          text "Email: #{client.email}"
+        end.render
+      end
+  end
+  ```
+
+  -> generate_pdf(client) → Creates a PDF in memory using Prawn (a Ruby PDF library).
+  -> send_data → Streams the generated PDF as a downloadable file.
+  -> filename: "#{client.name}.pdf" → Sets the downloaded file name.
+  -> type: "application/pdf" → Tells the browser it's a PDF file.
+
+
+
+  ## 5.1 Sending Files -*-*-*-*
+
+    -> The send_file method in Rails is used when we want to send an existing file from our server
+       to the user's browser for download. 
+    -> This is useful when we have already generated and stored a file (like a PDF, image, or 
+       document) and want the user to download it.
+
+    ```
+    class ClientsController < ApplicationController
+      # Stream a file that has already been generated and stored on disk.
+      def download_pdf
+        client = Client.find(params[:id])
+        send_file("#{Rails.root}/files/clients/#{client.id}.pdf",
+                  filename: "#{client.name}.pdf",
+                  type: "application/pdf")
+      end
+    end
+    ```
+
+    -> Find the Client → Client.find(params[:id])
+    -> Fetches the client record from the database using the ID provided in the URL.
+    -> Locate the File → "#{Rails.root}/files/clients/#{client.id}.pdf"
+    -> Assumes that the PDF file is stored in the files/clients/ directory inside the Rails
+       project.
+    -> Uses Rails.root to get the root path of your project dynamically.
+    -> Send the File Using send_file
+    -> filename: "#{client.name}.pdf" → Renames the file to the client’s name when downloaded.
+    -> type: "application/pdf" → Tells the browser that it's a PDF file.
+
+
+
+  ## 5.2 RESTful Downloads -*-*-*-*
+
+    -> In a RESTful application, each resource can have multiple representations.
+    -> Instead of creating a separate action like download_pdf, we can handle file downloads
+       within the show action itself using respond_to.
     
+    ```
+    class ClientsController < ApplicationController
+      # The user can request to receive this resource as HTML or PDF.
+      def show
+        @client = Client.find(params[:id])
+
+        respond_to do |format|
+          format.html
+          format.pdf { render pdf: generate_pdf(@client) }
+        end
+      end
+    end
+    ```
+
+    -> Fetches the client record from the database based on the ID from the URL.
+    -> This method tells Rails to respond differently based on the requested format.
+    -> If the user visits /clients/1, Rails will render the default show.html.erb.
+    -> If the user visits /clients/1.pdf, Rails will: Generate a PDF file for the client.
+    -> Render it as a response to be downloaded or viewed in the browser.
+
+
+    -> The user can request a PDF version of a client's details by simply adding .pdf to the URL:
+
+    ```
+    GET /clients/1.pdf
+    ```
+
+    -> If they visit /clients/1, they see an HTML page.
+    -> If they visit /clients/1.pdf, they get a PDF file.
+
+
+
+    ```
+    Mime::Type.lookup_by_extension(:pdf)
+    # => "application/pdf"
+    ```
+
+    -> Rails knows how to handle common file types like text/html and application/pdf using MIME
+       types.
+    -> This lets Rails automatically choose the right response format when the user requests .pdf.
+
+
+
+
+    -> If you need additional formats (like RTF), you can register a new MIME type in config/initializers/mime_types.rb:
+
+    ```
+    Mime::Type.register("application/rtf", :rtf)
+    ```
+
+    -> Now, Rails will recognize .rtf in the URL (/clients/1.rtf).
+
+
+
+
+  ## 5.3 Live Streaming of Arbitrary Data -*-*-*-*
+
+    -> Rails provides live streaming capabilities using the ActionController::Live module. 
+    -> This allows the server to send data to the client in real-time over a persistent connection
+       without waiting for the entire response to be generated.
+    
+    ```
+    class MyController < ActionController::Base
+      include ActionController::Live
+
+      def stream
+        response.headers["Content-Type"] = "text/event-stream"
+        100.times {
+          response.stream.write "hello world\n"
+          sleep 1
+        }
+      ensure
+        response.stream.close
+      end
+    end
+    ```
+
+    -> Here, the server sends "hello world" every second for 100 seconds. 
+    -> The browser will receive this data in real-time instead of waiting for the full response.
+
+
+
+    ### 5.3.1 Example Use Case ----
+
+      -> Imagine we're building a karaoke app, and we want to send song lyrics one line at a time,
+         as they are sung.
+
+      ```
+      class LyricsController < ActionController::Base
+        include ActionController::Live
+
+        def show
+          response.headers["Content-Type"] = "text/event-stream"
+          response.headers["Cache-Control"] = "no-cache"
+
+          song = Song.find(params[:id])
+
+          song.each do |line|
+            response.stream.write line.lyrics
+            sleep line.num_beats
+          end
+        ensure
+          response.stream.close
+        end
+      end
+      ```
+
+      -> This will send each line of the song in real-time, making it feel like a live karaoke
+         experience
+      
+    
+    ### 5.3.2 Streaming Considerations ----
+
+      -> Each stream runs in a new thread
+      -> Too many active streams can slow down the server.
+      -> Keep track of active streams to prevent performance issues.
+      -> Always close the stream (response.stream.close)
+      -> If you forget to close the stream, the socket will remain open forever, consuming server
+         resources.
+      -> Not all servers support streaming
+      -> WEBrick (Rails' default server) does not support live streaming because it buffers  
+         responses.
+
+         
+
+
+
+
 
 
 

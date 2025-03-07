@@ -64,3 +64,5 @@ end
 
 gem "bcrypt"
 gem "byebug"
+
+gem "prawn"
