@@ -1,0 +1,23 @@
+<h1>Clients List</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @clients.each do |client| %>
+      <tr>
+        <td><%= client.name %></td>
+        <td><%= client.email %></td>
+        <td><%= client.status %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= link_to "New Client", new_client_path %>

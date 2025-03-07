@@ -1,0 +1,24 @@
+<h1>New Client</h1>
+
+<%= form_with model: @client, url: clients_path do |f| %>
+  <div>
+    <%= f.label :name, "Client Name" %>
+    <%= f.text_field :name %>
+  </div>
+  
+  <div>
+    <%= f.label :email, "Email" %>
+    <%= f.email_field :email %>
+  </div>
+
+  <div>
+    <%= f.label :status, "Status" %>
+    <%= f.text_field :status %>
+  </div>
+
+  <div>
+    <%= f.submit "Create Client" %>
+  </div>
+<% end %>
+
+<%= link_to "Back", clients_path %>
