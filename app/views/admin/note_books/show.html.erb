@@ -1,0 +1,10 @@
+<h1>Notebook Details</h1>
+
+<p>Title: <%= @note_book.title %></p>
+<p>Content: <%= @note_book.content %></p>
+<p>Author: <%= @note_book.author %></p>
+
+<%= link_to "Edit", edit_admin_note_book_path(@note_book), class: "btn btn-primary" %>
+<%= link_to "Back to List", admin_note_books_path, class: "btn btn-secondary" %>
+
+<%= link_to "Download PDF", download_admin_note_book_path(@note_book, format: :pdf), class: "btn btn-success" %>

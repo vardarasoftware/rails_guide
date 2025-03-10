@@ -22,8 +22,13 @@ Rails.application.routes.draw do
   resources :note_books
   resources :users, only: [ :new, :create ]
   namespace :admin do
-    resources :note_books
+    resources :note_books do
+      member do
+        get :download
+      end
+    end
   end
+
   resources :notebooks do
     collection do
       post :upload_csv

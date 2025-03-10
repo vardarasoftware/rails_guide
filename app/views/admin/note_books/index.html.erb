@@ -1,0 +1,27 @@
+<h1>Admin - NoteBooks</h1>
+
+<%= link_to "New Notebook", new_admin_note_book_path, class: "btn btn-primary" %>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Content</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @note_books.each do |note_book| %>
+      <tr>
+        <td><%= note_book.title %></td>
+        <td><%= note_book.author %></td>
+        <td><%= note_book.content %></td>
+        <td>
+          <%= link_to "Edit", edit_admin_note_book_path(note_book), class: "btn btn-warning" %>
+          <%= link_to "Delete", admin_note_book_path(note_book), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-danger" %>
+          <%= link_to "Download PDF", download_admin_note_book_path(note_book), class: "btn btn-success" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
