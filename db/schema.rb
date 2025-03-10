@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_05_085105) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_10_072807) do
   create_table "account_histories", force: :cascade do |t|
     t.integer "credit_rating"
     t.integer "account_id", null: false
@@ -177,6 +177,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_085105) do
     t.integer "post_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "blog_post_id"
+    t.index ["blog_post_id"], name: "index_comments_on_blog_post_id"
   end
 
   create_table "computers", force: :cascade do |t|
@@ -522,6 +524,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_085105) do
   add_foreign_key "books", "authors"
   add_foreign_key "books_orders", "book_threes"
   add_foreign_key "books_orders", "order_twos"
+  add_foreign_key "comments", "blog_posts"
   add_foreign_key "employees", "employees", column: "manager_id"
   add_foreign_key "line_items", "orders"
   add_foreign_key "notifications", "usertwos"

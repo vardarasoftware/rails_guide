@@ -17,6 +17,32 @@
 <div>
   <h2><%= @blog_post.title %></h2>
   <p><%= @blog_post.content %></p>
+  <h2>Comments</h2>
+
+  <% if @blog_post.comments.any? %>
+    <ul>
+      <% @blog_post.comments.each do |comment| %>
+        <li>
+          <p><strong>Comment:</strong> <%= comment.content %></p>
+          <p><em>Posted <%= time_ago_in_words(comment.created_at) %> ago</em></p>
+
+          <%= link_to "Edit", edit_comment_path(comment) %> |
+          <%= button_to "Delete", comment_path(comment), method: :delete, data: { confirm: "Are you sure?" } %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p>No comments yet.</p>
+  <% end %>
+
+  <h3>Add a Comment</h3>
+  <%= form_with(model: [@blog_post, Comment.new], local: true) do |form| %>
+    <p>
+      <%= form.label :content, "Your Comment:" %><br>
+      <%= form.text_area :content %>
+    </p>
+    <%= form.submit "Post Comment" %>
+  <% end %>
 </div>
 
 <% if @blog_post.present? %>

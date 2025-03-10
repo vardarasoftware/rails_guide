@@ -4,6 +4,10 @@ Rails.application.routes.draw do
   resources :blog_posts
   resources :clients
 
+  resources :blog_posts do
+    resources :comments, shallow: true
+  end
+
   get "login", to: "sessions#new"
   post "login", to: "sessions#create"
   delete "logout", to: "sessions#destroy"
