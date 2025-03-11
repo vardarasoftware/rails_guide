@@ -1333,58 +1333,360 @@
     
     -> Without resolve, Rails would generate /baskets/:id.
     -> With resolve("Basket") { [:basket] }, it generates /basket.
+
+
+
+
+
+# 4 Customizing Resourceful Routes */*/*/*/*
+
+  -> By default, when we define resourceful routes using resources :photos, Rails automatically
+     assumes that the controller is named PhotosController. 
+  -> However, we can customize which controller handles a resource using the controller option.
+
+
+  ## 4.1 Specifying a Controller to Use -*-*-*-*
+
+    -> If we want a different controller to handle the resource, use the controller option.
+
+    ```
+    resources :photos, controller: "images"
+    ```
+
+    -> The URL still uses /photos, but Rails directs requests to the ImagesController instead of
+       PhotosController.
+
+    
+    -> How Rails Maps Requests:
+
+    HTTP Verb	                Path	            Controller#Action	              Named Route Helper
+
+    GET	                    /photos	               images#index	                  photos_path
+    GET	                    /photos/new	           images#new	                    new_photo_path
+    POST	                  /photos	               images#create	                photos_path
+    GET	                    /photos/:id	           images#show	                  photo_path(:id)
+    GET	                    /photos/:id/edit	     images#edit	                  edit_photo_path(:id)
+    PATCH/PUT	              /photos/:id	           images#update	                photo_path(:id)
+    DELETE	                /photos/:id	           images#destroy	                photo_path(:id)
+
+
+    -> If our database model is called Photo, but we want to handle it inside an ImagesController.
+    -> If we're refactoring our app but want to keep existing URLs.
+
+
+    -> If our controller is inside a namespace, we can define it like this:
+      ```
+      resources :user_permissions, controller: "admin/user_permissions"
+      ```
+    
+    -> This will route to: Admin::UserPermissionsController
+
+  
+
+  ## 4.2 Specifying Constraints on id -*-*-*-*
+
+    -> By default, Rails allows any numerical or string value for the id in resourceful routes.
+    -> However, we can restrict what values are accepted using constraints.
+
+    ```
+    resources :photos, constraints: { id: /[A-Z][A-Z][0-9]+/ }
+    ```
+
+    -> The id must start with two uppercase letters followed by numbers.
+    -> /photos/RR27 → Valid
+    -> /photos/1 → Invalid because it doesn’t match the pattern
+    -> /photos/abc123 → Invalid lowercase letters
+
+
+    -> Applying Constraints to Multiple Resources
+    -> Instead of adding constraints to each resource separately, we can apply them to multiple 
+       resources using a block:
+      ```
+      constraints(id: /[A-Z][A-Z][0-9]+/) do
+        resources :photos
+        resources :accounts
+      end
+      ```
+    
+    -> Now, both /photos/XX99 and /accounts/YY88 are valid, but /photos/1 or /accounts/abc123 are not.
+
+  
+
+
+  ## 4.3 Overriding Named Route Helpers -*-*-*-*
+
+    -> By default, Rails uses the resource name to generate path helpers.
+    -> For example, resources :photos generates:
+      > photos_path
+      > new_photo_path
+      > edit_photo_path(:id)
+    
+    -> We can rename the route helpers using the :as option.
+
+    ```
+    resources :photos, as: "images"
+    ```
+
+    -> URL remains /photos routes still work as expected
+    -> Path helpers change to images_path instead of photos_path
+
+
+    -> Updated Route Helpers
+      HTTP Verb	        Path	          Controller#Action	              Named Route Helper
+
+      GET	            /photos	              photos#index	                images_path
+      GET	            /photos/new	          photos#new	                  new_image_path
+      POST          	/photos	              photos#create	                images_path
+      GET	            /photos/:id	          photos#show	                  image_path(:id)
+      GET	            /photos/:id/edit	    photos#edit	                  edit_image_path(:id)
+      PATCH/PUT     	/photos/:id	          photos#update	                image_path(:id)
+      DELETE	        /photos/:id	          photos#destroy	              image_path(:id)
+
+    
+    -> This is useful when: we want more user-friendly route helpers.
+    -> we are refactoring but keeping the existing URL structure. 
+
+  
+
+  ## 4.4 Renaming new and edit Path Names -*-*-*-*
+
+    -> By default: new maps to /photos/new, edit maps to /photos/:id/edit
+
+    -> we can rename them using :path_names to make URLs more readable.
+
+    -> Example: Customizing new and edit Paths
+      ```
+      resources :photos, path_names: { new: "make", edit: "change" }
+      ```
+    
+    -> The controller actions remain the same (new and edit).
+    -> The helper methods are NOT changed
+    -> new_photo_path still works, but it points to /photos/make
+    -> edit_photo_path(:id) still works, but it points to /photos/:id/change
+
+
+
+    -> Applying Path Name Changes Globally
+    -> If we want to apply path_names changes to all routes:
+      ```
+      scope path_names: { new: "make" } do
+        resources :photos
+        resources :articles
+      end
+      ```
+    
+    -> All resources inside the scope will use /make instead of /new.
+    -> /photos/make instead of /photos/new
+    -> /articles/make instead of /articles/new
+
+  
+  
+
+
+  ## 4.5 Prefixing the Named Route Helpers with :as -*-*-*-*
+
+    -> The :as option allows us to rename route helpers so they don’t conflict with similar routes.
+
+    ```
+    scope "admin" do
+      resources :photos, as: "admin_photos"
+    end
+
+    resources :photos
+    ```
+
+    -> Normally, Rails generates route helpers like photos_path, new_photo_path, etc.
+    -> Since we have an admin/photos route inside a scope "admin", adding as: "admin_photos" ensures
+       that the admin routes don't override the general photo routes.
+    
+    -> Now, we get: admin_photos_path for admin photos, photos_path for regular photos.
+    -> Without the as: "admin_photos", the general photos routes would not have any route helpers.
+
+
+
+    -> If we want to prefix multiple routes at once, we can use :as inside a scope.
+    ```
+    scope "admin", as: "admin" do
+      resources :photos, :accounts
+    end
+
+    resources :photos, :accounts
+    ```
+
+    -> This renames all routes inside admin/ to use admin_ as a prefix.
+    -> Now, we have: admin_photos_path, admin_accounts_path, photos_path, accounts_path 
+
+  
+
+
+  ## 4.6 Using :as in Nested Resources -*-*-*-*
+
+    -> If we have nested resources, we can also rename the route helpers.
+
+    ```
+    resources :magazines do
+      resources :ads, as: "periodical_ads"
+    end
+    ```
+
+    -> Normally, Rails would generate: magazine_ads_path, edit_magazine_ad_path
+    -> With as: "periodical_ads", it changes to: magazine_periodical_ads_path,
+       edit_magazine_periodical_ad_path
+    -> This makes it clearer that these ads belong to a magazine periodical.
+
+  
+
+
+  ## 4.7 Parametric Scopes -*-*-*-*
+
+    -> We can add a dynamic segment to the route using scope.
+      ```
+      scope ":account_id", as: "account", constraints: { account_id: /\d+/ } do
+        resources :articles
+      end
+      ```
+
+    -> The :account_id in the URL represents an account’s ID, must be a number due to constraints.
+
+
+    -> The helper method:
+      ```
+      account_article_path(@account, @article) # => "/1/articles/9"
+      ```
+
+    -> This allows us to reference params[:account_id] inside controllers.
+
+
+  
+
+
+
+  ## 4.8 Restricting the Routes Created -*-*-*-*
+
+    -> By default, resources generates all the standard RESTful routes:
+      > index, show, new, create, edit, update, destroy
+    -> We can limit this using :only or :except.
+
+    -> Using :only
+      ```
+      resources :photos, only: [:index, :show]
+      ```
+    
+    -> Only allows index and show routes.
+    -> This means: GET /photos or GET /photos/:id Works and POST /photos or DELETE /photos/:id Fails.
+
+    -> Using :except
+      ```
+      resources :photos, except: :destroy
+
+    -> Creates all routes except destroy.
+    -> This means: index, show, new, create, edit, update
+    -> DELETE /photos/:id Does not exist
+
+    
+  
+
+  ## 4.9 Translated Paths -*-*-*-*
+
+    -> We can change the default paths in Rails routes to different languages or custom names using 
+       scope.
+    
+    ```
+    scope(path_names: { new: "neu", edit: "bearbeiten" }) do
+      resources :categories, path: "kategorien"
+    end
+    ```
+
+    -> categories becomes kategorien
+    -> new_category_path (default /categories/new) becomes /kategorien/neu
+    -> edit_category_path(@category) (default /categories/:id/edit) becomes /kategorien/:id/bearbeiten
+
+
+    -> Generated Routes:
+
+      HTTP Verb	        Path	                Controller#Action	                Helper Method
+
+      GET	          /kategorien	                categories#index	             categories_path
+      GET	          /kategorien/neu	            categories#new	               new_category_path
+      POST	        /kategorien	                categories#create	             categories_path
+      GET	          /kategorien/:id	            categories#show	               category_path(:id)
+      GET           /kategorien/:id/bearbeiten	categories#edit	               edit_category_path(:id)
+      PATCH/PUT	    /kategorien/:id	            categories#update	             category_path(:id)
+      DELETE	      /kategorien/:id	            categories#destroy	           category_path(:id)
+
+  
+
+
+
+
+  ## 4.10 Specifying the Singular Form of a Resource -*-*-*-*
+
+    -> Rails automatically converts singular and plural words, but if we need a custom conversion,
+       we can modify it.
+
+    -> Example: Fixing Irregular Pluralization
+    -> By default, Rails doesn’t know that the plural of "tooth" is "teeth", so we define it manually:
+
+    ```
+    ActiveSupport::Inflector.inflections do |inflect|
+      inflect.irregular "tooth", "teeth"
+    end
+    ```
+
+    -> What This Does
+      > Rails now knows tooth (singular) → teeth (plural).
+      > If we have a Tooth model, Rails will now look for /teeth instead of /tooths.
+
     
 
 
 
+  ## 4.11 Renaming Default Route Parameter id -*-*-*-*
 
+    -> Rails provide functnality to rename id to something else.
 
+    -> Example: Changing id to identifier
+      ```
+      resources :videos, param: :identifier
+      ```
 
+    -> Generated Routes:
 
+      HTTP Verb	      Path	                Controller#Action	          Helper Method
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      GET	          /videos	                  videos#index	            videos_path
+      POST	        /videos	                  videos#create	            videos_path
+      GET	          /videos/new	              videos#new	              new_video_path
+      GET	          /videos/:identifier/edit	videos#edit	              edit_video_path(:identifier)
 
     
+    -> Example Usage in Controller
+      ```
+      Video.find_by(identifier: params[:identifier]) 
+      # Instead of: Video.find_by(id: params[:id])
+      ```
 
 
+    ->  Overriding to_param in the Model
+    -> WE can make Rails use a custom identifier instead of id.
 
+    -> Example: Using identifier Instead of id
+      ```
+      class Video < ApplicationRecord
+        def to_param
+          identifier  # This replaces the default `id` in URLs
+        end
+      end
+      ```
 
+    
+    -> How It Works
+      ```
+      video = Video.find_by(identifier: "Roman-Holiday")
+      edit_video_path(video)  # => "/videos/Roman-Holiday/edit"
+      ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+      
 
 
 

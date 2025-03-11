@@ -10,16 +10,9 @@
 
 <%= link_to "New blog post", new_blog_post_path %>
 
-<% @blog_posts.each do |post| %>
-  <h2><%= post.title %></h2>
-  <p><%= post.content %></p>
+<% @blog_posts.each do |blog_post| %>
+  <h2><%= blog_post.title %></h2>
+  <p><%= blog_post.content %></p>
+  <p><em>Posted on <%= blog_post.created_at.strftime("%B %d, %Y") %></em></p>
+  <%= link_to 'Read More', blog_post_path(blog_post) %>
 <% end %>
-
-<div id="blog_posts">
-  <% @blog_posts.each do |blog_post| %>
-    <%= render partial: "blog_post", collection: @blog_posts %>
-    <p>
-      <%= link_to "Show this blog post", blog_post %>
-    </p>
-  <% end %>
-</div>

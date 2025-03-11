@@ -9,6 +9,8 @@ Rails.application.routes.draw do
   end
 
   get "ब्लॉग", to: "blog_posts#index"
+  resources :blogposts, constraints: { id: /BP\d+/ }
+  resources :blogposts, path_names: { new: "create", edit: "modify" }
 
   get "login", to: "sessions#new"
   post "login", to: "sessions#create"
