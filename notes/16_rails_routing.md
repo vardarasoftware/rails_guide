@@ -1686,7 +1686,241 @@
       edit_video_path(video)  # => "/videos/Roman-Holiday/edit"
       ```
 
-      
+
+
+
+# 5 Inspecting Routes */*/*/*/*
+
+  -> When developing a Rails application, we often need to check which routes are available. 
+  -> Rails provides multiple ways to inspect routes.
+
+
+  ## 5.1 Listing Existing Routes -*-*-*-*
+
+    ->  If we're running the Rails server, we can view all routes by visiting:
+      ```
+      http://localhost:3000/rails/info/routes
+      ```
+    
+    -> This works only in development mode.
+
+    -> we can also list all available routes directly in the terminal:
+    ```
+    bin/rails routes
+    ```
+
+    -> or:
+    
+    ```
+    rake routes
+    ```
+
+    -> This command outputs all routes in the application, including:
+      > Route name (e.g., users)
+      > HTTP method (GET, POST, PATCH, DELETE)
+      > URL pattern (/users, /users/:id/edit, etc.)
+      > Controller and action (e.g., users#index)
+
+
+    -> Output:
+      ```
+      users GET    /users(.:format)          users#index
+            POST   /users(.:format)          users#create
+    new_user GET    /users/new(.:format)      users#new
+    edit_user GET   /users/:id/edit(.:format) users#edit
+    ```
+
+
+    -> If you want to see the routes in a more detailed format, use:
+
+    ```
+    bin/rails routes --expanded
+    ```
+
+
+    -> output:
+    ```
+    --[ Route 1 ]----------------------------------------------------
+    Prefix            | users
+    Verb              | GET
+    URI               | /users(.:format)
+    Controller#Action | users#index
+    --[ Route 2 ]----------------------------------------------------
+    Prefix            |
+    Verb              | POST
+    URI               | /users(.:format)
+    Controller#Action | users#create
+    --[ Route 3 ]----------------------------------------------------
+    Prefix            | new_user
+    Verb              | GET
+    URI               | /users/new(.:format)
+    Controller#Action | users#new
+    --[ Route 4 ]----------------------------------------------------
+    Prefix            | edit_user
+    Verb              | GET
+    URI               | /users/:id/edit(.:format)
+    Controller#Action | users#edit
+
+    ```
+
+  
+
+  ## 5.2 Searching Routes -*-*-*-*
+
+    -> We an filter our routes using the -g (grep) option in the terminal. 
+    -> This helps us find routes related to:
+      > A specific URL helper method
+      > A particular HTTP method
+      > A specific URL pattern
+
+    -> Examples:
+    ```
+    bin/rails routes -g new_comment
+    bin/rails routes -g POST
+    bin/rails routes -g admin
+    ```
+
+
+    -> If we only want to see the routes for a specific controller, use -c.
+    ```
+    bin/rails routes -c users
+    bin/rails routes -c admin/users
+    bin/rails routes -c Comments
+    bin/rails routes -c Articles::CommentsController
+    ```
+
+    -> This is useful for debugging when we’re unsure which routes are mapped to a controller.
+
+
+  ## 5.3 Listing Unused Routes -*-*-*-*
+
+    -> we can find unused routes, routes that exist in routes.rb but are not used in controllers or 
+       views
+
+    ```
+    bin/rails routes --unused  
+    ```
+
+    -> output:
+    ```
+    Found 8 unused routes:
+
+        Prefix    Verb   URI Pattern                  Controller#Action
+        people    GET    /people(.:format)           people#index
+                  POST   /people(.:format)           people#create
+    new_person    GET    /people/new(.:format)       people#new
+    edit_person   GET    /people/:id/edit(.:format)  people#edit
+        person    GET    /people/:id(.:format)       people#show
+                  PATCH  /people/:id(.:format)       people#update
+                  PUT    /people/:id(.:format)       people#update
+                  DELETE /people/:id(.:format)       people#destroy
+    ```
+
+    -> Helps remove unnecessary routes that are not used in the project.
+    -> Improves performance and maintainability.
+
+
+
+  ## 5.4 Routes in Rails Console -*-*-*-*
+
+    -> we can check route helpers directly in Rails Console.
+
+    -> Using Rails.application.routes.url_helpers
+    -> This allows us to access route helpers in the console:
+      ```
+      Rails.application.routes.url_helpers.users_path 
+      # => "/users"
+      ```
+
+    
+    -> Using the app Object
+    -> we can also test routes dynamically with app:
+      ```
+      user = User.first  
+      => #<User:0x00007fc1eab81628
+      app.edit_user_path(user)  
+      # => "/users/1/edit"
+      ```
+    
+
+
+# 6 Testing Routes */*/*/*/*
+
+  -> Rails offers three built-in assertions designed to make testing routes simpler:
+    -> assert_generates
+    -> assert_recognizes
+    -> assert_routing
+
+  
+
+  ## 6.1 The assert_generates Assertion -*-*-*-*
+
+    -> This tests whether a given set of route options (controller, action, ID, etc.) generate the 
+       expected URL path.
+
+    ```
+    assert_generates "/photos/1", { controller: "photos", action: "show", id: "1" }
+    ```
+
+    -> This checks that controller: "photos", action: "show", and id: "1" generate "/photos/1".
+    -> If this test fails, it means your route isn't correctly set up.
+
+    ```
+    assert_generates "/about", controller: "pages", action: "about"
+    ```
+
+    -> This checks that the route /about correctly maps to PagesController#about.
+
+
+  
+  ## 6.2 The assert_recognizes Assertion -*-*-*-*
+
+    -> This is the opposite of assert_generates.
+    -> It tests whether a given path correctly maps to controller actions.
+    
+    -> Example:
+    ```
+    assert_recognizes({ controller: "photos", action: "show", id: "1" }, "/photos/1")
+    ```
+
+    -> This ensures that when a user visits "/photos/1", Rails correctly routes it to 
+       PhotosController#show with id: 1.
+
+    -> Testing HTTP Method (:method option)
+    -> If the route requires a specific HTTP verb, we can specify it:
+    ```
+    assert_recognizes({ controller: "photos", action: "create" }, { path: "photos", method: :post })
+    ```
+
+    -> This checks that sending a POST request to /photos calls PhotosController#create.
+
+  
+
+
+  ## 6.3 The assert_routing Assertion -*-*-*-*
+
+    -> This combines assert_generates and assert_recognizes.
+
+    -> It tests both directions: Path ➡ Controller/Action, Controller/Action ➡ Path
+
+    -> Example:
+      ```
+      assert_routing({ path: "photos", method: :post }, { controller: "photos", action: "create" })
+      ```
+
+    -> This checks both ways:
+      > POST /photos correctly routes to PhotosController#create.
+      > PhotosController#create correctly generates the path /photos when used in route helpers.
+
+
+
+
+
+
+
+
+
+
 
 
 
