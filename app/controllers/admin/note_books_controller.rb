@@ -1,7 +1,7 @@
 require "prawn"
 class Admin::NoteBooksController < ApplicationController
 
-  http_basic_authenticate_with name: "Arthur", password: "42424242"
+  http_basic_authenticate_with name: "user", password: "12345"
 
   rescue_from ActiveRecord::RecordNotFound, with: :note_book_not_found
 

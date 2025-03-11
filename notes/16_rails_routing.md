@@ -762,6 +762,622 @@
 
 
 
+# 3 Non-Resourceful Routes */*/*/*/*
+
+  -> Rails provides resourceful routing (using resources) to generate a set of standard RESTful
+     routes automatically. 
+  -> However, sometimes we may need custom, non-resourceful routes when:
+    > We want a custom URL that doesn't fit the RESTful pattern.
+    > We need to map old URLs to new actions.
+    > We need a single, standalone route without a full resource.
+
+  
+  ##  3.1 Bound Parameters -*-*-*-*
+
+    -> Bound parameters allow you to define optional URL segments.
+
+    ```
+    get "photos(/:id)", to: "photos#display"
+    ```
+
+    -> If the user requests /photos/1, Rails calls PhotosController#display with:
+      ```params[:id] # => "1" ```
+    
+    -> If the user requests /photos, the id is not required, and Rails still calls display.
+
+
+  
+  ## 3.2 Dynamic Segments -*-*-*-*
+
+    -> Dynamic segments allow Rails to capture parts of the URL as parameters.
+    
+    ```
+    get "photos/:id/:user_id", to: "photos#show"
+    ```
+
+    -> A request to /photos/1/2 will result in:
+    ```
+    params[:id]      # => "1"
+    params[:user_id] # => "2"
+    ```
+
+    -> Rails extracts the values from the URL and makes them available as params.
+
+  
+
+  ## 3.3 Static Segments -*-*-*-*
+
+    -> we can mix static segments with dynamic segments.
+    
+    ```
+    get "photos/:id/with_user/:user_id", to: "photos#show"
+    ```
+
+    -> A request to /photos/1/with_user/2 will result in:
+    ```
+    params[:id]      # => "1"
+    params[:user_id] # => "2"
+    ```
+
+    -> Static words (with_user) must be included in the URL for the route to match.
+
+
+  ## 3.4 Query String Parameters -*-*-*-*
+
+    -> Query string parameters are appended to the URL using ?key=value.
+
+    ```
+    get "photos/:id", to: "photos#show"
+    ```
+
+    -> A request to /photos/1?user_id=2 will result in:
+    ```
+    params[:id]      # => "1"
+    params[:user_id] # => "2"
+    ```
+
+    -> Query strings are optional and can contain additional paramete
+
+
+  
+  ## 3.5 Defining Default Parameters -*-*-*-*
+
+    -> Rails allows us to set default values for route parameters using the :defaults option.
+
+    ```
+    get "photos/:id", to: "photos#show", defaults: { format: "jpg" }
+    ```
+
+    -> A request to /photos/12 will automatically set:
+    ```
+    params[:id]     # => "12"
+    params[:format] # => "jpg"
+    ```
+
+    -> A request to /photos/12.png will override the default and set format: "png".
+
+
+
+    ```
+    defaults format: :json do
+      resources :photos
+      resources :articles
+    end
+    ```
+
+    -> Now, all responses from photos and articles will have format: json unless specified 
+       otherwise.
+    -> We cannot override default parameters using query strings.
+    -> Only URL path segments (like /photos/12.xml) can override them.
+
+  
+
+  ## 3.6 Naming Routes  -*-*-*-*
+
+    -> We can assign custom names to your routes using the :as option.
+
+    ```
+    get "exit", to: "sessions#destroy", as: :logout
+    ```
+
+    -> nstead of using sessions_destroy_path, you can now use:
+      ```
+      logout_path 
+      logout_url
+      ````
+    
+    -> Overriding Resourceful Route Names
+    ```
+    get ":username", to: "users#show", as: :user
+    resources :users
+    ```
+
+
+    -> Instead of user_path(@user), you can now use:
+      ```
+      user_path("jane") # => "/jane"
+      ```
+    -> Inside UsersController#show, params[:username] will contain "jane".
+    -> Place the custom route before the resources :users block so Rails matches it first.
+
+  
+
+  ## 3.7 HTTP Verb Constraints -*-*-*-*
+
+    -> We can restrict routes to specific HTTP verbs using get, post, put, patch, and delete.
+
+    ```
+    match "photos", to: "photos#show", via: [:get, :post]
+    ```
+    -> Both GET and POST requests to /photos will call PhotosController#show.
+
+
+    -> Allowing All HTTP Methods
+    
+    ```
+    match "photos", to: "photos#show", via: :all
+    ```
+    -> Any HTTP method (GET, POST, PATCH, etc.) will be routed to show.
+
+
+    -> Use match only when we need multiple verbs; otherwise, prefer explicit methods like get.
+
+
+  
+  ## 3.8 Segment Constraints -*-*-*-*
+
+    ```
+    get "photos/:id", to: "photos#show", constraints: { id: /[A-Z]\d{5}/ }
+    ```
+
+    -> The id parameter must:
+      > Start with an uppercase letter (A-Z).
+      > Be followed by 5 digits (\d{5}).
+      > Matches: /photos/A12345
+    -> Does NOT match: /photos/12345 or /photos/abcd
+
+
+    -> Shorter Way to Write It
+      ```
+      get "photos/:id", to: "photos#show", id: /[A-Z]\d{5}/
+      ```
+    
+    -> Same behavior as the previous example, but more concise.
+
+
+    -> Using Regular Expressions in Constraints
+      ```
+      get "/:id", to: "articles#show", constraints: { id: /^\d/ }
+      ```
+
+    -> Invalid Constraint
+    -> Rails automatically anchors routes (i.e., it treats them as ^ and $).
+    -> Solution: Just use /\d.+/ instead of /^\d/.
+
+
+      ```
+      get "/:id", to: "articles#show", constraints: { id: /\d.+/ }
+      ```
+
+    ->  Valid Constraint
+    -> id must start with a digit (\d).
+    -> Matches: /1-hello-world (routes to ArticlesController#show).
+    -> Does NOT match: /hello-world (won't match this route).
+
+
+  
+  ## 3.9 Request-Based Constraints -*-*-*-*
+
+
+    -> Rails allows us to restrict routes based on request properties, such as the subdomain or 
+       format.
+    
+    ```
+    get "photos", to: "photos#index", constraints: { subdomain: "admin" }
+    ```
+
+    -> This route only matches requests made to the admin subdomain.
+
+
+    -> Using Constraints in a Namespace:
+    
+    ```
+    namespace :admin do
+      constraints subdomain: "admin" do
+        resources :photos
+      end
+    end
+    ```
+
+    -> Creates RESTful routes (index, show, new, etc.) for PhotosController under the admin namespace.
+    -> These routes only work for requests under the admin subdomain (admin.example.com).
+
+  
+
+  ## 3.10 Advanced Constraints -*-*-*-*
+
+    -> Advanced constraints let you restrict access to routes based on custom logic, such as IP-based
+       restrictions, user roles, or any request-based condition. 
+    -> These constraints can be defined using classes, lambdas, or block forms.
+
+    -> We can create a custom constraint class that checks conditions before allowing a request to 
+       match a route.
+    
+    ```
+    class RestrictedListConstraint
+      def initialize
+        @ips = RestrictedList.retrieve_ips
+      end
+
+      def matches?(request)
+        @ips.include?(request.remote_ip)
+      end
+    end
+
+    Rails.application.routes.draw do
+      get "*path", to: "restricted_list#index",
+        constraints: RestrictedListConstraint.new
+    end
+    ```
+
+    -> RestrictedList.retrieve_ips fetches restricted IPs.
+    -> The matches? method checks if the request's IP is in the list.
+    -> If yes, the request is routed to "restricted_list#index".
+    -> If no, the request is ignored (other routes are checked).
+
+
+    -> Instead of defining a class, we can use a lambda function.
+
+    ```
+    Rails.application.routes.draw do
+      get "*path", to: "restricted_list#index",
+        constraints: lambda { |request| RestrictedList.retrieve_ips.include?(request.remote_ip) }
+    end
+    ```
+
+    -> The lambda receives the request object and checks if the remote_ip is in the restricted list.
+    -> If yes, the request goes to "restricted_list#index".
+    -> If no, it moves to other routes.
+
+
+
+    ### 3.10.1 Constraints in a Block Form -----
+
+      -> If we need to apply the same constraint to multiple routes, we can use a block.
+
+      ```
+      Rails.application.routes.draw do
+        constraints(RestrictedListConstraint.new) do
+          get "*path", to: "restricted_list#index"
+          get "*other-path", to: "other_restricted_list#index"
+        end
+      end
+      ````
+
+      -> Both routes use the same RestrictedListConstraint.
+      -> If the IP is restricted, requests are sent to:
+        > "restricted_list#index" (for *path)
+        > "other_restricted_list#index" (for *other-path)
+
+      
+
+      -> Using a Lambda for Block Constraints
+
+      ```
+      Rails.application.routes.draw do
+        constraints(lambda { |request| RestrictedList.retrieve_ips.include?(request.remote_ip) }) do
+          get "*path", to: "restricted_list#index"
+          get "*other-path", to: "other_restricted_list#index"
+        end
+      end
+      ```
+
+      ->  Same behavior, but without defining a separate class.
+
+  
+
+  ## 3.11 Wildcard Segments -*-*-*-*
+
+    -> Wildcard segments allow us to capture an arbitrary part of a URL and store it in params.
+
+    ```
+    get "photos/*other", to: "photos#unknown"
+    ```
+
+    -> /photos/12 → params[:other] = "12"
+    -> /photos/long/path/to/12 → params[:other] = "long/path/to/12"
+    -> *other captures everything after /photos/.
+    -> The value is stored in params[:other].
+    -> The request is sent to PhotosController#unknown.
+
+
+
+    -> Wildcards can appear before or after specific segments.
+    ```
+    get "books/*section/:title", to: "books#show"
+    ```
+
+    -> Everything after /books/ until /:title is stored in params[:section].
+    -> The last segment is assigned to params[:title].
+
+
+
+    -> Multiple Wildcard Segments
+    ```
+    get "*a/foo/*b", to: "test#index"
+    ```
+    -> *a captures everything before /foo/.
+    -> *b captures everything after /foo/.
+    -> The request goes to TestController#index
+
+  
+
+
+  ## 3.12 Format Segments -*-*-*-*
+
+    -> In Rails, format segments allow us to specify the response format as part of the URL. 
+    -> The format parameter is automatically captured from the URL when present.
+
+    ```
+    get "*pages", to: "pages#show"
+    ```
+
+    -> If a request is made to /about/contact.json
+      > params[:pages] = "about/contact"
+      > params[:format] = "json"
+    -> Rails automatically extracts .json as the format.
+    -> we don’t have to explicitly define :format in the route—it’s optional by default.
+
+
+    ->> If we want to ignore format extensions in URLs, use format: false.
+    ```
+    get "*pages", to: "pages#show", format: false
+    ```
+
+    -> Matches /about/contact
+    -> Does NOT match /about/contact.json
+    -> params[:format] will always be nil
+    -> This is useful if our routes should not handle formats explicitly.
+
+
+    
+    ->> If we want to force users to specify a format in the URL, use format: true.
+
+    ```
+    get "*pages", to: "pages#show", format: true
+    ```
+
+    -> Only matches URLs that include a format:
+      > /about/contact.json
+      > params[:format] will always be present.
+    -> This is useful when our API or frontend strictly requires a format, like JSON responses.
+
+  
+
+
+  ## 3.13 Redirection -*-*-*-*
+
+    -> Rails allows us to redirect routes to different paths using the redirect helper. 
+    -> This is useful when we need to permanently or temporarily redirect traffic from one route to
+       another.
+
+    ```
+    get "/stories", to: redirect("/articles")
+    ```
+
+    -> When a user visits /stories, they will be redirected to /articles.
+
+
+    -> We can reuse dynamic URL segments in the redirect:
+    ```
+    get "/stories/:name", to: redirect("/articles/%{name}")
+    ```
+
+    -> Request to /stories/rails-guide → Redirects to /articles/rails-guide
+
+
+    -> We can define custom logic for redirection using a block:
+    ```
+    get "/stories/:name", to: redirect { |path_params, req| "/articles/#{path_params[:name].pluralize}" }
+    ```
+
+    -> Request to /stories/book → Redirects to /articles/books (pluralized)
+
+
+    -> We can also access the request object to generate dynamic redirects:
+    ```
+    get "/stories", to: redirect { |path_params, req| "/articles/#{req.subdomain}" }
+    ```
+
+    -> If the request comes from tech.example.com/stories, it redirects to /articles/tech
+
+
+    -> By default, Rails uses 301 Moved Permanently, which some browsers cache aggressively.
+    -> If we want a temporary redirect (302), we can specify it:
+    ```
+    get "/stories/:name", to: redirect("/articles/%{name}", status: 302)
+    ```
+
+    -> Use 301 for permanent redirects (SEO-friendly but cached)
+    -> Use 302 for temporary redirects (useful for testing or dynamic changes)
+
+  
+
+
+  ## 3.14 Routing to Rack Applications -*-*-*-*
+
+    -> Rails routes can directly call a Rack application instead of a controller action. 
+    -> This allows integrating middleware, custom Rack apps, or external services directly into our
+       Rails app.
+
+    
+    -> Instead of routing to a controller action like:
+      ```
+      get "/articles", to: "articles#index"
+      ```
+    
+    -> We can route to a Rack application:
+      ```
+      match "/application.js", to: MyRackApp, via: :all
+      ```
+    
+    -> MyRackApp must be a Rack-compliant application, meaning it must respond to call(env) and 
+       return [status, headers, body].
+    -> via: :all ensures the route works for all HTTP methods (GET, POST, PUT, DELETE, etc.).
+
+
+
+    -> If we use match, our Rack application must expect the full route path:
+      ```
+      match "/admin", to: AdminApp, via: :all
+      ```
+    
+    -> Here, AdminApp must handle /admin internally.
+
+    -> But if we want AdminApp to receive requests at the root (/), use mount:
+      ```
+      mount AdminApp, at: "/admin"
+      ```
+    
+    -> Now, inside AdminApp, paths will start from /, not /admin.
+
+  
+
+  ## 3.15 Using root -*-*-*-*
+
+    -> The root method in Rails is used to define the default route for your application, 
+       i.e., what should be displayed when a user visits / (the home page).
+    
+    ```
+    root to: "pages#main"
+    root "pages#main" # shortcut for the above
+    ```
+
+    -> This means that when a user visits the root URL (/), Rails will direct them to the main action
+       in the PagesController.
+    
+
+    -> We can define different root paths for different parts of our application:
+      ```
+      namespace :admin do
+        root to: "admin#index"
+      end
+      ```
+
+    -> This means that visiting /admin will go to AdminController's index action.
+    -> The regular root (/) still maps to HomeController#index if defined as root to: "home#index".
+
+
+  
+  ## 3.16 Unicode Character Routes -*-*-*-*
+
+    -> Rails allows using Unicode characters in routes:
+      ```
+      get "こんにちは", to: "welcome#index"
+      ```
+
+    -> This maps GET /こんにちは to the index action of the WelcomeController. 
+    -> Useful for applications with non-English URLs.
+
+  
+
+  ## 3.17 Direct Routes -*-*-*-*
+
+    -> Direct routes let you create custom URL helpers.
+
+    ```
+    direct :homepage do
+      "https://rubyonrails.org"
+    end
+    ```
+
+    -> Now calling homepage_url in our views or controllers returns "https://rubyonrails.org".
+
+    -> Using Direct Routes with Models
+      ```
+      direct :commentable do |model|
+        [model, anchor: model.dom_id]
+      end
+      ```
+
+    -> This generates URLs that link to a specific model and include an anchor.
+    -> Using Direct Routes for Controllers
+      ```
+      direct :main do
+        { controller: "pages", action: "index", subdomain: "www" }
+      end
+      ```
+    
+    -> This creates main_url, which points to "http://www.example.com/pages".
+
+  
+
+  ## 3.18 Using resolve -*-*-*-*
+
+    -> The resolve method customizes how Rails generates paths for polymorphic URLs.
+
+      ```
+      resource :basket
+      resolve("Basket") { [:basket] }
+      ```
+    
+    -> Normally, Rails would generate URLs like /baskets/:id for a Basket model.
+    -> The resolve method makes it use /basket instead of /baskets/:id in path helpers.
+
+    -> uses in forms:
+      ```
+      <%= form_with model: @basket do |form| %>
+        <!-- basket form -->
+      <% end %>
+      ```
+    
+    -> Without resolve, Rails would generate /baskets/:id.
+    -> With resolve("Basket") { [:basket] }, it generates /basket.
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
 
 
 
