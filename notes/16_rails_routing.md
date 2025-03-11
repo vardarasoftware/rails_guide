@@ -1916,6 +1916,40 @@
 
 
 
+# 7 Breaking Up a Large Route File With draw -*-*-*-*
+
+  -> In a big Rails application, the routes.rb file can become too large and difficult to manage. 
+  -> To keep it organized, Rails allows us to split it into multiple smaller files using the draw 
+     method.
+
+
+  -> For example, instead of putting all routes inside config/routes.rb, we can create separate files
+     for different sections of your application, like admin.rb for admin-related routes or api.rb for API-related routes.
+
+
+  ```
+  Rails.application.routes.draw do
+    get "foo", to: "foo#bar"
+
+    draw(:admin) # Will load another route file located in `config/routes/admin.rb`
+  end
+  ```
+
+  ```
+  namespace :admin do
+    resources :comments
+  end
+  ```
+
+
+  -> In config/routes.rb, we call draw(:admin). 
+  -> This tells Rails to load another file named admin.rb from the config/routes/ directory.
+  -> Inside config/routes/admin.rb, we define admin-specific routes.
+  -> When Rails loads routes.rb, it will also include all routes from admin.rb, keeping the main file
+     cleaner.
+
+  
+
 
 
 
