@@ -16,6 +16,7 @@ class BlogPostsController < ApplicationController
   # GET /blog_posts/1 or /blog_posts/1.json
   def show
     @blog_post = BlogPost.find(params[:id])
+    @comments = @blog_post.comments
     if @blog_post.featured?
       render action: "featured_show"
     end
@@ -64,6 +65,7 @@ class BlogPostsController < ApplicationController
 
   # DELETE /blog_posts/1 or /blog_posts/1.json
   def destroy
+    @blog_post = BlogPost.find(params[:id])
     @blog_post.destroy!
 
     respond_to do |format|
@@ -80,7 +82,7 @@ class BlogPostsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def blog_post_params
-      params.fetch(:blog_post, {})
+      params.fetch(:blog_post).permit(:title, :content)
     end
 
     def blog_post_layout

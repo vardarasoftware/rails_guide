@@ -4,6 +4,14 @@ Rails.application.routes.draw do
   resources :blog_posts
   resources :clients
 
+  resources :blog_posts do
+    resources :comments, shallow: true
+  end
+
+  get "ब्लॉग", to: "blog_posts#index"
+  resources :blogposts, constraints: { id: /BP\d+/ }
+  resources :blogposts, path_names: { new: "create", edit: "modify" }
+
   get "login", to: "sessions#new"
   post "login", to: "sessions#create"
   delete "logout", to: "sessions#destroy"
@@ -27,6 +35,10 @@ Rails.application.routes.draw do
         get :download
       end
     end
+  end
+
+  namespace :admin do
+    root "note_books#index"
   end
 
   resources :notebooks do

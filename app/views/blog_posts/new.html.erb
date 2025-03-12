@@ -1,11 +1,21 @@
-<% content_for :title, "New blog post" %>
+<h1>New Blog Post</h1>
 
-<h1>New blog post</h1>
+<%= form_with(model: @blog_post, local: true) do |form| %>
+  <div>
+    <%= form.label :title, "Title" %><br>
+    <%= form.text_field :title, required: true %>
+  </div>
 
-<%= render "form", blog_post: @blog_post %>
+  <div>
+    <%= form.label :content, "Content" %><br>
+    <%= form.text_area :content, required: true, rows: 5 %>
+  </div>
 
-<br>
+  <div>
+    <%= form.submit "Create Blog Post" %>
+  </div>
+<% end %>
 
 <div>
-  <%= link_to "Back to blog posts", blog_posts_path %>
+<%= link_to "Back to Blog Posts", blogposts_path %>
 </div>
